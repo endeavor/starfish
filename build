@@ -2,6 +2,9 @@
 
 DIR=${HOME}/Work/starfish
 USERNAME="John Smith"
+USERPASS=""
+MIRROR=""
+MIPASS=""
 SERVER="jupiter.lge.net"
 SUSER="john"
 declare TASK
@@ -80,14 +83,48 @@ do_start()
 #
 # -----------------------------------------------------------------------------
 
+do_clone()
+{(
+    title "Clone build-starfish"
+    local dir=${DIR}/build-starfish
+    if [ ! -d ${dir} ]; then
+        print "git clone ssh://gpro.palm.com/starfish/build-starfish.git"
+        git clone ssh://gpro.palm.com/starfish/build-starfish.git
+        check
+        print "Unpack toolchain for H13:"
+        print "tar xf arm-taskone-linux-gnueabi.tar.bz2"
+        cd ${dir}/GF_ToolChain/H13/
+        check
+        tar xf arm-taskone-linux-gnueabi.tar.bz2
+        check
+    else
+        print "Already cloned:"
+        print "${dir}"
+    fi
+); [ $? -eq 0 ] || terminate; }
+
+# -----------------------------------------------------------------------------
+#
+# -----------------------------------------------------------------------------
+
 do_mount()
 {(
     title "Mounting shared downloads"
-    #MIRROR_SRC=shareuser@172.26.123.186:/home/nightbuilder/build-starfish-completed
-    #MIRROR_DST=/home/vasia/Mount/mirror
-    #mkdir -p ${MIRROR_DST}
-    #echo "Mounting ${MIRROR_SRC} to ${MIRROR_DST}..."
-    #sshfs ${MIRROR_SRC} ${MIRROR_DST}
+    local dir=${DIR}/build-mirrors
+    mkdir -p ${dir}
+    check
+
+    local mounted=`mount | grep ${MIRROR}`
+    if [ -z ${mounted} ]; then
+        print "Mounting: ${MIRROR}"
+        print "to ${dir}"
+        echo ${MIPASS} | sshfs ${MIRROR} ${dir} -o workaround=rename -o password_stdin
+        check
+    else
+        print "Already mounted:"
+        print "${mounted}"
+    fi
+
 ); [ $? -eq 0 ] || terminate; }
 
 # -----------------------------------------------------------------------------
@@ -101,7 +138,11 @@ do_vpn()
     if [ ! -f ${pid} ]; then
         print "Openconnect..."
         print "----------------------------------------------------------"
-        sudo openconnect vpn10.palm.com --user="${USERNAME}" --background --pid-file=${pid} --script /etc/vpnc/vpnc-script
+        if [ ${USERPASS} ]; then
+            echo ${USERPASS} | sudo openconnect vpn10.palm.com --user="${USERNAME}" --background --pid-file=${pid} --script /etc/vpnc/vpnc-script --passwd-on-stdin
+        else
+            sudo openconnect vpn10.palm.com --user="${USERNAME}" --background --pid-file=${pid} --script /etc/vpnc/vpnc-script
+        fi
     else
         print "Already connected:"
         print "${pid}"
@@ -119,7 +160,7 @@ do_configure()
     if [ ! -d ${buildir} ]; then
         cd ${DIR}/build-starfish
         print "Running mfc..."
-        #mfc
+        ./mcf -p 0 -b 0 --premirror=file:///${DIR}/build-mirrors/downloads --sstatemirror=file:///${DIR}/build-mirrors/sstate-cache goldfinger
     else
         print "Already configured:"
         print "${buildir}"
@@ -244,6 +285,8 @@ do_main()
     do_start
     do_mount
     do_vpn
+    do_clone
+return
     do_configure
     do_bake
     do_copy
@@ -251,3 +294,4 @@ do_main()
 
 parse_arguments "$@"
 do_main
+title "DONE"
