@@ -1,12 +1,17 @@
 #!/bin/bash
 
-DIR=${HOME}/Work/starfish
-USERNAME="John Smith"
-USERPASS=""
-MIRROR=""
-MIPASS=""
-SERVER="jupiter.lge.net"
-SUSER="john"
+declare DIR=$PWD
+
+# Define the following variables in build.conf file
+declare VPN_SITE="vpn10.palm.com"
+declare VPN_USER # Your VPN account name
+declare VPN_PASS # Your VPN password
+declare MIRROR_PATH="shareuser@172.26.123.186:/home/nightbuilder/build-starfish-completed"
+declare MIRROR_PASS="shareuser@palm2013"
+declare SERVER_NAME="jupiter.lge.net"
+declare SERVER_USER # Your account at server
+declare SERVER_PASS # Your password at server
+
 declare TASK
 
 # -----------------------------------------------------------------------------
@@ -63,24 +68,86 @@ print()
 
 print_usage()
 {
-    echo "?????????????????? $$"
+    cat << EOF
+
+Usage: ./build.bash [COMMAND] OPTIONS
+EOF
     kill -SIGINT $$
 }
 
 # -----------------------------------------------------------------------------
-#
+# Read configuration
 # -----------------------------------------------------------------------------
 
 do_start()
-{(
+{
     title "Start"
-    print "Location: "$DIR
-    print "    Task: "$TASK
+
+    # Get local settings from build.cfg
+    if [ -f ./build.conf ]; then
+        print "Reading build.conf"
+        source ./build.conf
+        check
+    fi
+
+    print
+    print "Location: ${DIR}"
+    print "     VPN: ${VPN_USER} at ${VPN_SITE}"
+    print "  Mirror: ${MIRROR_PATH}"
+    print "  Server: ${SERVER_USER} at ${SERVER_NAME}"
+    print "    Task: ${TASK}"
     cd ${DIR}
+    check
+}
+
+# -----------------------------------------------------------------------------
+# Mount shared mirror to get access to downloads and sstate-cache
+# -----------------------------------------------------------------------------
+
+do_mount()
+{(
+    title "Mounting shared downloads"
+    local dir=${DIR}/build-mirrors
+    mkdir -p ${dir}
+    check
+
+    local mounted=`mount | grep ${MIRROR_PATH}`
+    if [ -z "${mounted}" ]; then
+        print "Mounting: ${MIRROR_PATH}"
+        print "to ${dir}"
+        echo ${MIRROR_PASS} | sshfs ${MIRROR_PATH} ${dir} -o workaround=rename -o password_stdin
+        check
+    else
+        print "Already mounted:"
+        print "${mounted}"
+    fi
+
 ); [ $? -eq 0 ] || terminate; }
 
 # -----------------------------------------------------------------------------
-#
+# Connect VPN
+# -----------------------------------------------------------------------------
+
+do_vpn()
+{(
+    title "Connecting VPN"
+    local pid=${DIR}/openconnect-pid
+    if [ ! -f ${pid} ]; then
+        print "openconnect ${VPN_SITE} --user=\"${VPN_USER}\" --background --pid-file=${pid}"
+        print "----------------------------------------------------------"
+        if [ ${VPN_PASS} ]; then
+            echo ${VPN_PASS} | sudo openconnect ${VPN_SITE} --user="${VPN_USER}" --background --pid-file=${pid} --script /etc/vpnc/vpnc-script --passwd-on-stdin
+        else
+            sudo openconnect ${VPN_SITE} --user="${VPN_USER}" --background --pid-file=${pid} --script /etc/vpnc/vpnc-script
+        fi
+    else
+        print "Already connected:"
+        print "${pid}"
+    fi
+); [ $? -eq 0 ] || terminate; }
+
+# -----------------------------------------------------------------------------
+# Clone build-starfish.git
 # -----------------------------------------------------------------------------
 
 do_clone()
@@ -104,53 +171,7 @@ do_clone()
 ); [ $? -eq 0 ] || terminate; }
 
 # -----------------------------------------------------------------------------
-#
-# -----------------------------------------------------------------------------
-
-do_mount()
-{(
-    title "Mounting shared downloads"
-    local dir=${DIR}/build-mirrors
-    mkdir -p ${dir}
-    check
-
-    local mounted=`mount | grep ${MIRROR}`
-    if [ -z ${mounted} ]; then
-        print "Mounting: ${MIRROR}"
-        print "to ${dir}"
-        echo ${MIPASS} | sshfs ${MIRROR} ${dir} -o workaround=rename -o password_stdin
-        check
-    else
-        print "Already mounted:"
-        print "${mounted}"
-    fi
-
-); [ $? -eq 0 ] || terminate; }
-
-# -----------------------------------------------------------------------------
-#
-# -----------------------------------------------------------------------------
-
-do_vpn()
-{(
-    title "Connecting VPN"
-    local pid=${DIR}/openconnect-pid
-    if [ ! -f ${pid} ]; then
-        print "Openconnect..."
-        print "----------------------------------------------------------"
-        if [ ${USERPASS} ]; then
-            echo ${USERPASS} | sudo openconnect vpn10.palm.com --user="${USERNAME}" --background --pid-file=${pid} --script /etc/vpnc/vpnc-script --passwd-on-stdin
-        else
-            sudo openconnect vpn10.palm.com --user="${USERNAME}" --background --pid-file=${pid} --script /etc/vpnc/vpnc-script
-        fi
-    else
-        print "Already connected:"
-        print "${pid}"
-    fi
-); [ $? -eq 0 ] || terminate; }
-
-# -----------------------------------------------------------------------------
-#
+# Run mfc to configure starfish build
 # -----------------------------------------------------------------------------
 
 do_configure()
@@ -160,7 +181,7 @@ do_configure()
     if [ ! -d ${buildir} ]; then
         cd ${DIR}/build-starfish
         print "Running mfc..."
-        ./mcf -p 0 -b 0 --premirror=file:///${DIR}/build-mirrors/downloads --sstatemirror=file:///${DIR}/build-mirrors/sstate-cache goldfinger
+        ./mcf -p 0 -b 0 --preMIRROR_PATH=file:///${DIR}/build-MIRROR_PATHs/downloads --sstateMIRROR_PATH=file:///${DIR}/build-MIRROR_PATHs/sstate-cache goldfinger
     else
         print "Already configured:"
         print "${buildir}"
@@ -168,7 +189,7 @@ do_configure()
 ); [ $? -eq 0 ] || terminate; }
 
 # -----------------------------------------------------------------------------
-#
+# Run bitbake with specified target
 # -----------------------------------------------------------------------------
 
 do_bake()
@@ -200,7 +221,7 @@ do_bake()
 ); [ $? -eq 0 ] || terminate; }
 
 # -----------------------------------------------------------------------------
-#
+# Copy image or libs
 # -----------------------------------------------------------------------------
 
 do_copy()
@@ -212,14 +233,14 @@ do_copy()
         webkit)
             print "Copying WebKit..."
             webkitdir=${buildir}/work/armv7a-vfp-neon-starfish-linux-gnueabi/webkit-starfish-0.5.1-27-r17/packages-split/webkit-starfish
-            destination=${SUSER}@${SERVER}:/share/webos/users/${SUSER}/starfish/
+            destination=${SERVER_USER}@${SERVER_NAME}:/share/webos/users/${SERVER_USER}/starfish/
             scp -r ${webkitdir} ${destination}
         ;;
 
         image)
             print "Copying starfish-image..."
             image=${buildir}/deploy/images/starfish-image-goldfinger.tar.gz 
-            destination=${SUSER}@${SERVER}:/home/${SUSER}/starfish/
+            destination=${SERVER_USER}@${SERVER_NAME}:/home/${SERVER_USER}/starfish/
             scp ${image} ${destination}
         ;;
 
@@ -231,7 +252,7 @@ do_copy()
 ); [ $? -eq 0 ] || terminate; }
 
 # -----------------------------------------------------------------------------
-#
+# Parse command line options
 # -----------------------------------------------------------------------------
 
 parse_arguments()
@@ -263,7 +284,8 @@ parse_arguments()
             --help | -h) print_usage ;;
 
             *)
-                if [ $? -ne 0 ]; then
+                if [ ${option} ]; then
+                    echo "Unsupported argument"
                     print_usage
                 else
                     TASK="image"
@@ -277,7 +299,7 @@ parse_arguments()
 }
 
 # -----------------------------------------------------------------------------
-#
+# Main
 # -----------------------------------------------------------------------------
 
 do_main()
@@ -289,7 +311,7 @@ do_main()
 return
     do_configure
     do_bake
-    do_copy
+    #do_copy
 }
 
 parse_arguments "$@"
