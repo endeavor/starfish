@@ -4,12 +4,12 @@ declare DIR=$PWD
 
 # Define the following variables in build.conf file
 declare VPN_SITE="vpn10.palm.com"
-declare VPN_USER # Your VPN account name
-declare VPN_PASS # Your VPN password
+declare VPN_USER # Your VPN account login
+declare VPN_PASS # Your VPN account password
 declare MIRROR_PATH="shareuser@172.26.123.186:/home/nightbuilder/build-starfish-completed"
 declare MIRROR_PASS="shareuser@palm2013"
 declare SERVER_NAME="jupiter.lge.net"
-declare SERVER_USER # Your account at server
+declare SERVER_USER # Your username at server
 declare SERVER_PASS # Your password at server
 
 declare TASK
@@ -158,12 +158,6 @@ do_clone()
         print "git clone ssh://gpro.palm.com/starfish/build-starfish.git"
         git clone ssh://gpro.palm.com/starfish/build-starfish.git
         check
-        print "Unpack toolchain for H13:"
-        print "tar xf arm-taskone-linux-gnueabi.tar.bz2"
-        cd ${dir}/GF_ToolChain/H13/
-        check
-        tar xf arm-taskone-linux-gnueabi.tar.bz2
-        check
     else
         print "Already cloned:"
         print "${dir}"
@@ -181,10 +175,33 @@ do_configure()
     if [ ! -d ${buildir} ]; then
         cd ${DIR}/build-starfish
         print "Running mfc..."
-        ./mcf -p 0 -b 0 --preMIRROR_PATH=file:///${DIR}/build-MIRROR_PATHs/downloads --sstateMIRROR_PATH=file:///${DIR}/build-MIRROR_PATHs/sstate-cache goldfinger
+        ./mcf -p 0 -b 0 --premirror=file:///${DIR}/build-mirrors/downloads --sstatemirror=file:///${DIR}/build-mirrors/sstate-cache goldfinger
     else
         print "Already configured:"
         print "${buildir}"
+    fi
+); [ $? -eq 0 ] || terminate; }
+
+# -----------------------------------------------------------------------------
+# Clone build-starfish.git
+# -----------------------------------------------------------------------------
+
+do_toolchain()
+{(
+    title "Toolchain"
+    local dir=${DIR}/build-starfish/GF_ToolChain/H13
+    local toolchaindir="arm-taskone-lg115x-linux-gnueabi"
+    local toolchainfile="arm-taskone-linux-gnueabi.tar.bz2"
+    if [ ! -d ${dir}/${toolchaindir} ]; then
+        print "Unpacking toolchain for H13:"
+        cd ${dir}
+        check
+        print "tar xf ${toolchainfile}"
+        tar xf ${toolchainfile}
+        check
+    else
+        print "Toolchain is unpacked"
+        print "${dir}"
     fi
 ); [ $? -eq 0 ] || terminate; }
 
@@ -308,9 +325,9 @@ do_main()
     do_mount
     do_vpn
     do_clone
-return
     do_configure
-    do_bake
+    do_toolchain
+    #do_bake
     #do_copy
 }
 
