@@ -12,7 +12,7 @@ declare SERVER_NAME="jupiter.lge.net"
 declare SERVER_USER # Your username at server
 declare SERVER_PASS # Your password at server
 
-declare TASK
+declare TASK="image"
 
 # -----------------------------------------------------------------------------
 # Check current error code
@@ -70,7 +70,7 @@ print_usage()
 {
     cat << EOF
 
-Usage: ./build.bash [COMMAND] OPTIONS
+    Usage: ./build.bash [COMMAND] OPTIONS
 EOF
     kill -SIGINT $$
 }
@@ -301,12 +301,8 @@ parse_arguments()
             --help | -h) print_usage ;;
 
             *)
-                if [ ${option} ]; then
-                    echo "Unsupported argument"
-                    print_usage
-                else
-                    TASK="image"
-                fi
+                echo "Unsupported argument: ${option}"
+                print_usage
             ;;
         esac
 
