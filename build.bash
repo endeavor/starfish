@@ -12,7 +12,14 @@ declare SERVER_NAME="jupiter.lge.net"
 declare SERVER_USER # Your username at server
 declare SERVER_PASS # Your password at server
 
+# -----------------------------------------------------------------------------
+# Internal variables
+# -----------------------------------------------------------------------------
+
 declare TASK="image"
+declare CONF=""
+declare BAKE="1"
+declare COPY=""
 
 # -----------------------------------------------------------------------------
 # Check current error code
@@ -211,6 +218,11 @@ do_toolchain()
 
 do_bake()
 {(
+    if [ ! "${BAKE}" ]; then
+        title "Bitbake: SKIP"
+        return
+    fi
+
     title "Bitbake"
     print "Source bitbake.rc"
     cd ${DIR}/build-starfish/BUILD-goldfinger
@@ -218,10 +230,17 @@ do_bake()
 
     case "${TASK}" in
         webkit)
-            print "Compiling WebKit:"
-            print "bitbake webkit-starfish -C compile"
-            echo && echo
-            bitbake webkit-starfish -C compile
+            if [ "${CONF}" ]; then
+                print "Configuring WebKit:"
+                print "bitbake webkit-starfish -C configure"
+                echo && echo
+                bitbake webkit-starfish -C configure
+            else
+                print "Compiling WebKit:"
+                print "bitbake webkit-starfish -C compile"
+                echo && echo
+                bitbake webkit-starfish -C compile
+            fi
         ;;
 
         image)
@@ -243,14 +262,19 @@ do_bake()
 
 do_copy()
 {(
+    if [ ! "${COPY}" ]; then
+        title "Copy: SKIP"
+        return
+    fi
+
     title "Copy"
     local buildir=${DIR}/build-starfish/BUILD-goldfinger
 
     case "${TASK}" in
         webkit)
             print "Copying WebKit..."
-            webkitdir=${buildir}/work/armv7a-vfp-neon-starfish-linux-gnueabi/webkit-starfish-0.5.1-27-r17/packages-split/webkit-starfish
-            destination=${SERVER_USER}@${SERVER_NAME}:/share/webos/users/${SERVER_USER}/starfish/
+            webkitdir=${buildir}/work/armv7a-vfp-neon-starfish-linux-gnueabi/webkit-starfish-*/packages-split/webkit-starfish/usr
+            destination=${SERVER_USER}@${SERVER_NAME}:/var/webos-in/users/${SERVER_USER}/starfish/
             scp -r ${webkitdir} ${destination}
         ;;
 
@@ -290,12 +314,24 @@ parse_arguments()
 
         # parse the option
         case "${option}" in
-            webkit | wk)
+            --image | image | all)
+                TASK="image"
+            ;;
+
+            --webkit | webkit | wk)
                 TASK="webkit"
             ;;
 
-            image | all)
-                TASK="image"
+            --configure | configure | conf | cfg | cf)
+                CONF="1"
+            ;;
+
+            --without-bitbake | nobb | nbb | nb)
+                BAKE=""
+            ;;
+
+            --copy | copy | cp)
+                COPY="1"
             ;;
 
             --help | -h) print_usage ;;
@@ -323,8 +359,8 @@ do_main()
     do_clone
     do_configure
     do_toolchain
-    #do_bake
-    #do_copy
+    do_bake
+    do_copy
 }
 
 parse_arguments "$@"
