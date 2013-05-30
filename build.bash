@@ -159,16 +159,57 @@ do_vpn()
 
 do_clone()
 {(
+    local dir
+
     title "Clone build-starfish"
-    local dir=${DIR}/build-starfish
+    dir=${DIR}/build-starfish
     if [ ! -d ${dir} ]; then
         print "git clone ssh://gpro.palm.com/starfish/build-starfish.git"
+        echo
         git clone ssh://gpro.palm.com/starfish/build-starfish.git
         check
     else
         print "Already cloned:"
         print "${dir}"
     fi
+
+    title "Clone WebKit"
+    dir=${DIR}/WebKit
+    if [ ! -d ${dir} ]; then
+        print "git clone ssh://gpro.palm.com/starfish/WebKit"
+        echo
+        git clone ssh://gpro.palm.com/starfish/WebKit
+        check
+    else
+        print "Already cloned:"
+        print "${dir}"
+    fi
+); [ $? -eq 0 ] || terminate; }
+
+# -----------------------------------------------------------------------------
+# Clone build-starfish.git
+# -----------------------------------------------------------------------------
+
+do_conf()
+{(
+    title "Create local configuration"
+    local file=${DIR}/build-starfish/webos-local.conf
+
+    if [ ! -f ${file} ]; then
+        print "Creating:"
+        print "${file}"
+        echo 'S_pn-webkit-starfish = "'`echo ${DIR}`'/WebKit"' > ${file}
+        echo '#PR_pn-webkit-starfish = "r21"' >> ${file}
+        echo '#SRC_URI_pn-webkit-starfish = "file:///dev/null"' >> ${file}
+    else
+        print "Already created:"
+        print "${file}"
+    fi
+
+    #cd ${DIR}/WebKit
+    #git config --local --add url.ssh://gpro.palm.com/starfish/WebKit.pushInsteadOf "ssh://starfish@172.26.123.186/home/starfish/starfish/downloads/gpro.palm.com.starfish.WebKit"
+    #check
+    #cd ${DIR}
 ); [ $? -eq 0 ] || terminate; }
 
 # -----------------------------------------------------------------------------
@@ -357,6 +398,7 @@ do_main()
     do_mount
     do_vpn
     do_clone
+    do_conf
     do_configure
     do_toolchain
     do_bake
