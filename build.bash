@@ -21,6 +21,7 @@ declare  VPN="1"
 declare CONF=""
 declare BAKE="1"
 declare COPY=""
+declare TIME=0
 
 # -----------------------------------------------------------------------------
 # Check current error code
@@ -55,9 +56,10 @@ terminate()
 
 title()
 {
+    local times=`date +%T`
     echo
     echo "[[[[[[|]]]]]] ******************************************************"
-    echo "[[[[[[|]]]]]] *** ${1}"
+    echo "[ ${times}  ] *** ${1}"
     echo "[[[[[[|]]]]]] ******************************************************"
 }
 
@@ -89,7 +91,8 @@ EOF
 
 do_start()
 {
-    title "Start"
+    title "Start (`date +%d.%m.%Y`)"
+    TIME=$((`date +%s`))
 
     # Get local settings from build.cfg
     if [ -f ./build.conf ]; then
@@ -106,6 +109,27 @@ do_start()
     print "    Task: ${TASK}"
     cd ${DIR}
     check
+}
+
+# -----------------------------------------------------------------------------
+# Finish
+# -----------------------------------------------------------------------------
+
+do_finish()
+{
+    local delta=$((`date +%s` - $TIME))
+    if (( delta > 60)); then
+        delta=$(($delta/60))
+        if ((  delta > 60 )); then
+            hours=$(($delta/60))
+            minutes=$(($delta-$hours*60))
+            title "DONE in $hours hours $minutes min"
+        else
+            title "DONE in $delta min"
+        fi
+    else
+        title "DONE"
+    fi
 }
 
 # -----------------------------------------------------------------------------
@@ -522,9 +546,9 @@ do_main()
     do_toolchain
     do_bake
     do_copy
-    do_board
+    #do_board
+    do_finish
 }
 
 parse_arguments "$@"
 do_main
-title "DONE"
