@@ -81,6 +81,14 @@ print_usage()
     cat << EOF
 
     Usage: ./build.bash [COMMAND] OPTIONS
+
+    --without-vpn | novpn | nv                  - skip VPN connection
+    --image | image | all                       - build webOS image (default)
+    --webkit | webkit | wk                      - build WebKit
+    --configure | configure | conf | cfg | cf   - do configure before compilation
+    --without-bitbake | nobb | nbb | nb         - skip build (bitbake)
+    --copy | copy | cp                          - copy output to server
+    --help | -h                                 - print this help
 EOF
     kill -SIGINT $$
 }
