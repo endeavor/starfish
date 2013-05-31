@@ -17,6 +17,7 @@ declare SERVER_PASS # Your password at server
 # -----------------------------------------------------------------------------
 
 declare TASK="image"
+declare  VPN="1"
 declare CONF=""
 declare BAKE="1"
 declare COPY=""
@@ -137,6 +138,11 @@ do_mount()
 
 do_vpn()
 {(
+    if [ ! "${VPN}" ]; then
+        title "VPN: SKIP"
+        return
+    fi
+
     title "Connecting VPN"
     local pid=${DIR}/openconnect-pid
     if [ ! -f ${pid} ]; then
@@ -408,6 +414,40 @@ do_copy()
 ); [ $? -eq 0 ] || terminate; }
 
 # -----------------------------------------------------------------------------
+# Target board preparation
+# -----------------------------------------------------------------------------
+
+do_board()
+{(
+    title "Target board preparation"
+    local buildir=${DIR}/build-starfish/BUILD-goldfinger
+
+    cat >> .profile << EOF
+echo
+echo Welcome to webOS: $HOSTNAME
+echo
+alias ls='ls --color'
+alias ll='ls -la --color'
+alias l='ls'
+EOF
+
+    cat >> isis2.bash << EOF
+#!/bin/bash
+
+source /etc/init.d/env.sh
+export XDG_RUNTIME_DIR="/var/run/xdg" 
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+/usr/bin/isis2 -i com.palm.isis2 $@
+EOF
+
+    destination=${SERVER_USER}@${SERVER_NAME}:/var/webos-in/users/${SERVER_USER}/starfish/home/root/
+    scp .profile ${destination}
+    check
+    scp isis2.bash ${destination}
+    check
+); [ $? -eq 0 ] || terminate; }
+
+# -----------------------------------------------------------------------------
 # Parse command line options
 # -----------------------------------------------------------------------------
 
@@ -429,6 +469,10 @@ parse_arguments()
 
         # parse the option
         case "${option}" in
+            --without-vpn | novpn | nv)
+                VPN=""
+            ;;
+
             --image | image | all)
                 TASK="image"
             ;;
@@ -478,6 +522,7 @@ do_main()
     do_toolchain
     do_bake
     do_copy
+    do_board
 }
 
 parse_arguments "$@"
