@@ -114,12 +114,12 @@ do_start()
 do_mount()
 {(
     title "Mounting shared downloads"
-    local dir=${DIR}/build-mirrors
-    mkdir -p ${dir}
-    check
 
     local mounted=`mount | grep ${MIRROR_PATH}`
     if [ -z "${mounted}" ]; then
+        local dir=${DIR}/build-mirrors
+        mkdir -p ${dir}
+        check
         print "Mounting: ${MIRROR_PATH}"
         print "to ${dir}"
         echo ${MIRROR_PASS} | sshfs ${MIRROR_PATH} ${dir} -o workaround=rename -o password_stdin
@@ -150,6 +150,64 @@ do_vpn()
     else
         print "Already connected:"
         print "${pid}"
+    fi
+); [ $? -eq 0 ] || terminate; }
+
+# -----------------------------------------------------------------------------
+# Clone build-starfish.git
+# -----------------------------------------------------------------------------
+
+do_gitconfig()
+{(
+    title "Patch ~/.gitconfig"
+    local mark="build-starfish"
+    local subst=`git config --global --list | grep ${mark}`
+    if [ -z "${subst}" ]; then
+        print "Adding mirrors to global ~/.gitconfig"
+        cat >> ~/.gitconfig << EOF
+
+# downloads:
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/downloads/g2g.palm.com..luna-sysmgr"]
+    insteadOf = "ssh://g2g.palm.com/luna-sysmgr"
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/downloads/gpro.palm.com.starfish.GF-Libs"]
+    insteadOf = "ssh://gpro.palm.com/starfish/GF-Libs"
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/downloads/gpro.palm.com.starfish.tv-binaries-goldfinger"]
+    insteadOf = "ssh://gpro.palm.com/starfish/tv-binaries-goldfinger"
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/downloads/gpro.palm.com.starfish.WebKit"]
+    insteadOf = "ssh://gpro.palm.com/starfish/WebKit"
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/downloads/gpro.palm.com.webos-pro.demo-apps"]
+    insteadOf = "ssh://gpro.palm.com/webos-pro/demo-apps"
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/tvbinaries/64.28.148.103.linux-3.4-lg115x"]
+    insteadOf = "git://64.28.148.103/linux-3.4-lg115x"
+# metalayers & build-starfish:
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/metalayers/build-starfish.git"]
+    insteadOf = "ssh://gpro.palm.com/starfish/build-starfish.git"
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/metalayers/bitbake.git"]
+    insteadOf = "git://github.com/openembedded/bitbake.git"
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/metalayers/GF_ToolChain.git"]
+    insteadOf = "ssh://gpro.palm.com/starfish/GF_ToolChain.git"
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/metalayers/meta-goldfinger.git"]
+    insteadOf = "ssh://gpro.palm.com/starfish/meta-goldfinger.git"
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/metalayers/meta-oe.git"]
+    insteadOf = "git://github.com/openembedded/meta-oe.git"
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/metalayers/meta-qemux86-starfish.git"]
+    insteadOf = "ssh://gpro.palm.com/starfish/meta-qemux86-starfish.git"
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/metalayers/meta-qt5.git"]
+    insteadOf = "ssh://gpro.palm.com/webos-pro/meta-qt5.git"
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/metalayers/meta-starfish.git"]
+    insteadOf = "ssh://gpro.palm.com/starfish/meta-starfish.git"
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/metalayers/meta-webos-backports.git"]
+    insteadOf = "ssh://g2g.palm.com/meta-webos-backports.git"
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/metalayers/meta-webos.git"]
+    insteadOf = "git://github.com/openwebos/meta-webos.git"
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/metalayers/meta-webos-pro.git"]
+    insteadOf = "ssh://gpro.palm.com/webos-pro/meta-webos-pro.git"
+[url "ssh://starfish@172.26.123.186/home/starfish/starfish/metalayers/oe-core.git"]
+    insteadOf = "git://github.com/openembedded/oe-core.git"
+EOF
+        check
+    else
+        print "Already patched: ~/.gitconfig"
     fi
 ); [ $? -eq 0 ] || terminate; }
 
@@ -199,17 +257,33 @@ do_conf()
         print "Creating:"
         print "${file}"
         echo 'S_pn-webkit-starfish = "'`echo ${DIR}`'/WebKit"' > ${file}
-        echo '#PR_pn-webkit-starfish = "r21"' >> ${file}
-        echo '#SRC_URI_pn-webkit-starfish = "file:///dev/null"' >> ${file}
+        echo 'PR_pn-webkit-starfish = "d0"' >> ${file}
+        echo 'SRC_URI_pn-webkit-starfish = "file:///dev/null"' >> ${file}
     else
         print "Already created:"
         print "${file}"
     fi
 
-    #cd ${DIR}/WebKit
-    #git config --local --add url.ssh://gpro.palm.com/starfish/WebKit.pushInsteadOf "ssh://starfish@172.26.123.186/home/starfish/starfish/downloads/gpro.palm.com.starfish.WebKit"
-    #check
-    #cd ${DIR}
+    cd ${DIR}/WebKit
+    local mirror="ssh://starfish@172.26.123.186/home/starfish/starfish/downloads/gpro.palm.com.starfish.WebKit"
+    local origin="ssh://gpro.palm.com/starfish/WebKit"
+    local remote=`git remote -v | grep ${origin}`
+    if [ -z "${remote}" ]; then
+        print "Fixing local WebKit .git/config:"
+        print "git remote set-url origin ${mirror}"
+        git remote set-url origin ${mirror}
+        check
+        print "git config --local --add url.${origin}.insteadOf ${mirror}"
+        git config --local --add url.${origin}.insteadOf ${mirror}
+        #git config --local --add url.${origin}.pushInsteadOf ${mirror}
+        check
+    else
+        print "Local WebKit .git/config is already fixed:"
+    fi
+    print "git remote -v"
+    echo
+    git remote -v
+    cd ${DIR}
 ); [ $? -eq 0 ] || terminate; }
 
 # -----------------------------------------------------------------------------
@@ -397,6 +471,7 @@ do_main()
     do_start
     do_mount
     do_vpn
+    do_gitconfig
     do_clone
     do_conf
     do_configure
