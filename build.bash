@@ -17,7 +17,7 @@ declare SERVER_PASS # Your password at server
 # -----------------------------------------------------------------------------
 
 declare TASK="image"
-declare  VPN="1"
+declare  VPN=""
 declare CONF=""
 declare BAKE="1"
 declare COPY=""
@@ -82,7 +82,7 @@ print_usage()
 
     Usage: ./build.bash [COMMAND] OPTIONS
 
-    --without-vpn | novpn | nv                  - skip VPN connection
+    --with-vpn | vpn                            - Esteblish VPN connection
     --image | image | all                       - build webOS image (default)
     --webkit | webkit | wk                      - build WebKit
     --configure | configure | conf | cfg | cf   - do configure before compilation
@@ -171,7 +171,6 @@ do_mount()
 do_vpn()
 {(
     if [ ! "${VPN}" ]; then
-        title "VPN: SKIP"
         return
     fi
 
@@ -501,8 +500,8 @@ parse_arguments()
 
         # parse the option
         case "${option}" in
-            --without-vpn | novpn | nv)
-                VPN=""
+            --with-vpn | vpn)
+                VPN="1"
             ;;
 
             --image | image | all)
