@@ -21,6 +21,7 @@ declare  VPN=""
 declare CONF=""
 declare BAKE="1"
 declare COPY=""
+declare  QT5=""
 declare TIME=0
 
 # -----------------------------------------------------------------------------
@@ -479,6 +480,23 @@ EOF
 ); [ $? -eq 0 ] || terminate; }
 
 # -----------------------------------------------------------------------------
+# Building Qt5 for PC/Linux
+# -----------------------------------------------------------------------------
+
+build_qt5()
+{(
+    title "Building Qt5 for PC/Linux"
+
+    if [ ! -f "qtsdk/qtbase/bin/qmlmin" ]; then
+        ./build-qt5.bash -D
+        check
+    else
+        print "Qt5 is already built"
+        print "qtsdk/qtbase"
+    fi
+); [ $? -eq 0 ] || terminate; }
+
+# -----------------------------------------------------------------------------
 # Parse command line options
 # -----------------------------------------------------------------------------
 
@@ -524,6 +542,12 @@ parse_arguments()
                 COPY="1"
             ;;
 
+            --qt5 | qt5 | qt)
+                QT5="1"
+                TASK="pc"
+                BAKE=""
+            ;;
+
             --help | -h) print_usage ;;
 
             *)
@@ -544,16 +568,24 @@ parse_arguments()
 do_main()
 {
     do_start
-    do_mount
-    do_vpn
-    do_gitconfig
-    do_clone
-    do_conf
-    do_configure
-    do_toolchain
-    do_bake
-    do_copy
-    #do_board
+    case "${TASK}" in
+        pc)
+            build_qt5
+        ;;
+
+        *)
+            do_mount
+            do_vpn
+            do_gitconfig
+            do_clone
+            do_conf
+            do_configure
+            do_toolchain
+            do_bake
+            do_copy
+            #do_board
+        ;;
+    esac
     do_finish
 }
 
