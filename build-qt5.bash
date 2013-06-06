@@ -41,7 +41,7 @@ done
 RELDIR=`dirname $0`
 ABSDIR=`cd $RELDIR;pwd`
 
-. $ABSDIR/build-qt5-env
+. $ABSDIR/build-qt5.env
 
 THREADS=
 if [ $N_THREADS -gt 1 ]; then
