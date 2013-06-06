@@ -42,6 +42,3 @@ $WEBKIT_ROOT/Tools/Scripts/build-webkit \
    --qmakearg="WEBKIT_CONFIG-=use_umediaserver" \
    --qmakearg="DEFINES+=WEBOS_DESKTOP" \
    --qmakearg="WEBKIT_CONFIG-=use_gstreamer"
-
-make $JOBS 
-#&& cd $WEBKIT_ROOT/$WEBKITOUTPUTDIR/Release && make install

@@ -21,7 +21,6 @@ declare  VPN=""
 declare CONF=""
 declare BAKE="1"
 declare COPY=""
-declare  QT5=""
 declare TIME=0
 
 # -----------------------------------------------------------------------------
@@ -497,6 +496,23 @@ buildQt5()
 ); [ $? -eq 0 ] || terminate; }
 
 # -----------------------------------------------------------------------------
+# Building WebKit for PC/Linux
+# -----------------------------------------------------------------------------
+
+buildWebKit()
+{(
+    title "Building WebKit for PC/Linux"
+
+    #if [ ! -d "WebKit/WebKitBuild/desktop" ]; then
+        ./build-webkit.bash
+        check
+    #else
+    #    print "WebKit is already built:"
+    #    print "WebKit/WebKitBuild/desktop"
+    #fi
+); [ $? -eq 0 ] || terminate; }
+
+# -----------------------------------------------------------------------------
 # Parse command line options
 # -----------------------------------------------------------------------------
 
@@ -542,8 +558,7 @@ parseArguments()
                 COPY="1"
             ;;
 
-            --qt5 | qt5 | qt)
-                QT5="1"
+            --linux | linux | pc)
                 TASK="pc"
                 BAKE=""
             ;;
@@ -571,6 +586,7 @@ runMain()
     case "${TASK}" in
         pc)
             buildQt5
+            buildWebKit
         ;;
 
         *)
