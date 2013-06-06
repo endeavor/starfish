@@ -254,10 +254,8 @@ EOF
 
 cloneStarfish()
 {(
-    local dir
-
     title "Clone build-starfish"
-    dir=${DIR}/build-starfish
+    local dir=${DIR}/build-starfish
     if [ ! -d ${dir} ]; then
         print "git clone ssh://gpro.palm.com/starfish/build-starfish.git"
         echo
@@ -267,9 +265,16 @@ cloneStarfish()
         print "Already cloned:"
         print "${dir}"
     fi
+); [ $? -eq 0 ] || terminate; }
 
+# -----------------------------------------------------------------------------
+# Clone WebKit
+# -----------------------------------------------------------------------------
+
+cloneWebKit()
+{(
     title "Clone WebKit"
-    dir=${DIR}/WebKit
+    local dir=${DIR}/WebKit
     if [ ! -d ${dir} ]; then
         print "git clone ssh://gpro.palm.com/starfish/WebKit"
         echo
@@ -300,7 +305,15 @@ createLocalConfiguration()
         print "Already created:"
         print "${file}"
     fi
+); [ $? -eq 0 ] || terminate; }
 
+# -----------------------------------------------------------------------------
+# Fixing git origin for WebKit
+# -----------------------------------------------------------------------------
+
+fixWebKitOrigin()
+{(
+    title "Fix WebKit origin"
     cd ${DIR}/WebKit
     local mirror="ssh://starfish@172.26.123.186/home/starfish/starfish/downloads/gpro.palm.com.starfish.WebKit"
     local origin="ssh://gpro.palm.com/starfish/WebKit"
@@ -504,7 +517,9 @@ buildWebKit()
     title "Building WebKit for PC/Linux"
 
     #if [ ! -d "WebKit/WebKitBuild/desktop" ]; then
-        ./build-webkit.bash
+        print "./build-webkit.bash > build-webkit.log"
+        echo
+        ./build-webkit.bash > build-webkit.log
         check
     #else
     #    print "WebKit is already built:"
@@ -585,6 +600,9 @@ runMain()
     doStart
     case "${TASK}" in
         pc)
+            patchGitconfig
+            cloneWebKit
+            fixWebKitOrigin
             buildQt5
             buildWebKit
         ;;
@@ -594,6 +612,8 @@ runMain()
             connectVpn
             patchGitconfig
             cloneStarfish
+            cloneWebKit
+            fixWebKitOrigin
             createLocalConfiguration
             runMfc
             unpackToolchain
