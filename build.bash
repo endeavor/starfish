@@ -77,7 +77,7 @@ print()
 # Print section title
 # -----------------------------------------------------------------------------
 
-print_usage()
+printUsage()
 {
     cat << EOF
 
@@ -98,7 +98,7 @@ EOF
 # Read configuration
 # -----------------------------------------------------------------------------
 
-do_start()
+doStart()
 {
     title "Start (`date +%d.%m.%Y`)"
     TIME=$((`date +%s`))
@@ -124,7 +124,7 @@ do_start()
 # Finish
 # -----------------------------------------------------------------------------
 
-do_finish()
+doFinish()
 {
     local delta=$((`date +%s` - $TIME))
     if (( delta > 60)); then
@@ -145,7 +145,7 @@ do_finish()
 # Mount shared mirror to get access to downloads and sstate-cache
 # -----------------------------------------------------------------------------
 
-do_mount()
+mountSharedDownloads()
 {(
     title "Mounting shared downloads"
 
@@ -169,7 +169,7 @@ do_mount()
 # Connect VPN
 # -----------------------------------------------------------------------------
 
-do_vpn()
+connectVpn()
 {(
     if [ ! "${VPN}" ]; then
         return
@@ -195,7 +195,7 @@ do_vpn()
 # Clone build-starfish.git
 # -----------------------------------------------------------------------------
 
-do_gitconfig()
+patchGitconfig()
 {(
     title "Patch ~/.gitconfig"
     local mark="build-starfish"
@@ -253,7 +253,7 @@ EOF
 # Clone build-starfish.git
 # -----------------------------------------------------------------------------
 
-do_clone()
+cloneStarfish()
 {(
     local dir
 
@@ -286,7 +286,7 @@ do_clone()
 # Clone build-starfish.git
 # -----------------------------------------------------------------------------
 
-do_conf()
+createLocalConfiguration()
 {(
     title "Create local configuration"
     local file=${DIR}/build-starfish/webos-local.conf
@@ -328,7 +328,7 @@ do_conf()
 # Run mfc to configure starfish build
 # -----------------------------------------------------------------------------
 
-do_configure()
+runMfc()
 {(
     title "Configuring: mfc"
     local buildir=${DIR}/build-starfish/BUILD-goldfinger
@@ -346,7 +346,7 @@ do_configure()
 # Clone build-starfish.git
 # -----------------------------------------------------------------------------
 
-do_toolchain()
+unpackToolchain()
 {(
     title "Toolchain"
     local dir=${DIR}/build-starfish/GF_ToolChain/H13
@@ -369,7 +369,7 @@ do_toolchain()
 # Run bitbake with specified target
 # -----------------------------------------------------------------------------
 
-do_bake()
+runBitbake()
 {(
     if [ ! "${BAKE}" ]; then
         title "Bitbake: SKIP"
@@ -413,7 +413,7 @@ do_bake()
 # Copy image or libs
 # -----------------------------------------------------------------------------
 
-do_copy()
+copyFilesToServer()
 {(
     if [ ! "${COPY}" ]; then
         title "Copy: SKIP"
@@ -449,7 +449,7 @@ do_copy()
 # Target board preparation
 # -----------------------------------------------------------------------------
 
-do_board()
+prepareTargetBoard()
 {(
     title "Target board preparation"
     local buildir=${DIR}/build-starfish/BUILD-goldfinger
@@ -483,7 +483,7 @@ EOF
 # Building Qt5 for PC/Linux
 # -----------------------------------------------------------------------------
 
-build_qt5()
+buildQt5()
 {(
     title "Building Qt5 for PC/Linux"
 
@@ -500,7 +500,7 @@ build_qt5()
 # Parse command line options
 # -----------------------------------------------------------------------------
 
-parse_arguments()
+parseArguments()
 {
     # local variables
     local arg option
@@ -548,11 +548,11 @@ parse_arguments()
                 BAKE=""
             ;;
 
-            --help | -h) print_usage ;;
+            --help | -h) printUsage ;;
 
             *)
                 echo "Unsupported argument: ${option}"
-                print_usage
+                printUsage
             ;;
         esac
 
@@ -565,29 +565,29 @@ parse_arguments()
 # Main
 # -----------------------------------------------------------------------------
 
-do_main()
+runMain()
 {
-    do_start
+    doStart
     case "${TASK}" in
         pc)
-            build_qt5
+            buildQt5
         ;;
 
         *)
-            do_mount
-            do_vpn
-            do_gitconfig
-            do_clone
-            do_conf
-            do_configure
-            do_toolchain
-            do_bake
-            do_copy
-            #do_board
+            mountSharedDownloads
+            connectVpn
+            patchGitconfig
+            cloneStarfish
+            createLocalConfiguration
+            runMfc
+            unpackToolchain
+            runBitbake
+            copyFilesToServer
+            #prepareTargetBoard
         ;;
     esac
-    do_finish
+    doFinish
 }
 
-parse_arguments "$@"
-do_main
+parseArguments "$@"
+runMain
