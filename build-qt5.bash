@@ -109,7 +109,7 @@ done
 export QTDIR=$NEW_QTDIR
 export PATH=$QTDIR/bin:$PATH
 
-./configure -opensource -confirm-license -no-pch -nomake examples -nomake demos -nomake tests -no-gtkstyle -nomake translations -qt-zlib -qt-sql-sqlite $BUILD_TYPE $INSTALL_TYPE
+./configure -opensource -confirm-license -no-pch -nomake examples -nomake demos -nomake tests -no-gtkstyle -nomake translations -qt-zlib -qt-sql-sqlite -qt-xcb $BUILD_TYPE $INSTALL_TYPE
 
 cd qtbase && make $THREADS && if [ ! $DEVELOPER_BUILD ]; then make install; fi && cd ..
 if [ $? -ne 0 ] ; then
