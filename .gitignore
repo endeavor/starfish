@@ -2,4 +2,5 @@ build.conf
 build-starfish
 build-mirrors
 WebKit
+qtsdk
 MSG
