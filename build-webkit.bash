@@ -40,5 +40,4 @@ $WEBKIT_ROOT/Tools/Scripts/build-webkit \
    --qmakearg="QMAKE_RPATHDIR+=$QTDIR/usr/lib" \
    --qmakearg="WEBKIT_CONFIG-=palm_service_bridge" \
    --qmakearg="WEBKIT_CONFIG-=use_umediaserver" \
-   --qmakearg="DEFINES+=WEBOS_DESKTOP" \
    --qmakearg="WEBKIT_CONFIG-=use_gstreamer"
