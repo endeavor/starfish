@@ -333,6 +333,17 @@ fixWebKitOrigin()
     print "git remote -v"
     echo
     git remote -v
+    echo
+
+    if [ ! -f ".git/hooks/commit-msg" ]; then
+        print "Copying Gerrit hook:"
+        print "scp -p gpro.palm.com:hooks/commit-msg .git/hooks/"
+        scp -p gpro.palm.com:hooks/commit-msg .git/hooks/
+        check
+    else
+        print "Gerrit hook exists: .git/hooks/commit-msg"
+    fi
+
     cd ${DIR}
 ); [ $? -eq 0 ] || terminate; }
 
@@ -426,13 +437,19 @@ runBitbake()
 # -----------------------------------------------------------------------------
 
 copyFilesToServer()
-{(
+{
     if [ ! "${COPY}" ]; then
         title "Copy: SKIP"
         return
     fi
 
     title "Copy"
+
+    if [ ! "${SERVER_USER}" ]; then
+        print "ERROR: SERVER_USER is not set"
+        terminate
+    fi
+
     local buildir=${DIR}/build-starfish/BUILD-goldfinger
 
     case "${TASK}" in
@@ -455,7 +472,7 @@ copyFilesToServer()
             terminate
         ;;
     esac
-); [ $? -eq 0 ] || terminate; }
+}
 
 # -----------------------------------------------------------------------------
 # Target board preparation
@@ -468,7 +485,7 @@ prepareTargetBoard()
 
     cat >> .profile << EOF
 echo
-echo Welcome to webOS: $HOSTNAME
+echo Welcome to webOS: `hostname`
 echo
 alias ls='ls --color'
 alias ll='ls -la --color'
