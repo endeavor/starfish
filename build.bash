@@ -7,6 +7,7 @@ declare VPN_SITE="vpn10.palm.com"
 declare VPN_USER # Your VPN account login
 declare VPN_PASS # Your VPN account password
 declare MIRROR_PATH="shareuser@172.26.123.186:/home/nightbuilder/build-starfish-completed"
+declare MIRROR_DIR="build-mirrors"
 declare MIRROR_PASS="shareuser@palm2013"
 declare SERVER_NAME="jupiter.lge.net"
 declare SERVER_USER # Your username at server
@@ -150,7 +151,7 @@ mountSharedDownloads()
 
     local mounted=`mount | grep ${MIRROR_PATH}`
     if [ -z "${mounted}" ]; then
-        local dir=${DIR}/build-mirrors
+        local dir=${DIR}/${MIRROR_DIR}
         mkdir -p ${dir}
         check
         print "Mounting: ${MIRROR_PATH}"
@@ -358,8 +359,8 @@ runMfc()
     if [ ! -d ${buildir} ]; then
         cd ${DIR}/build-starfish
         print "Running mfc..."
-        ./mcf -p 0 -b 0 --premirror=file:///${DIR}/build-mirrors/downloads --sstatemirror=file:///${DIR}/build-mirrors/sstate-cache goldfinger
-    else
+        ./mcf -p 0 -b 0 --premirror=file://${DIR}/${MIRROR_DIR}/downloads --sstatemirror=file://${DIR}/${MIRROR_DIR}/sstate-cache goldfinger
+   else
         print "Already configured:"
         print "${buildir}"
     fi
@@ -617,7 +618,7 @@ runMain()
     doStart
     case "${TASK}" in
         pc)
-            patchGitconfig
+            #patchGitconfig
             cloneWebKit
             fixWebKitOrigin
             buildQt5
@@ -625,9 +626,9 @@ runMain()
         ;;
 
         *)
-            mountSharedDownloads
+            #mountSharedDownloads
             connectVpn
-            patchGitconfig
+            #patchGitconfig
             cloneStarfish
             cloneWebKit
             fixWebKitOrigin
