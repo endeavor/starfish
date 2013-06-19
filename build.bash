@@ -6,12 +6,34 @@ declare DIR=$PWD
 declare VPN_SITE="vpn10.palm.com"
 declare VPN_USER # Your VPN account login
 declare VPN_PASS # Your VPN account password
-declare MIRROR_PATH="shareuser@172.26.123.186:/home/nightbuilder/build-starfish-completed"
+declare MIRROR_PATH
 declare MIRROR_DIR="build-mirrors"
-declare MIRROR_PASS="shareuser@palm2013"
-declare SERVER_NAME="jupiter.lge.net"
+declare MIRROR_USER # User name for cache server
+declare MIRROR_PASS # Password for cache server
+declare SERVER_NAME # Server name or IP
 declare SERVER_USER # Your username at server
 declare SERVER_PASS # Your password at server
+
+# -----------------------------------------------------------------------------
+# build.conf samples
+# -----------------------------------------------------------------------------
+
+### LGERP:
+#MIRROR_PATH="shareuser@172.26.123.186:/home/nightbuilder/build-starfish-completed"
+#MIRROR_PATH="//ushquc001.palm.com/official_26/starfish_rsync"
+#MIRROR_USER="shareuser"
+#MIRROR_PASS="shareuser@palm2013"
+#SERVER_NAME="jupiter.lge.net"
+
+### LGSVL:
+#MIRROR_PATH="//ushquc001.palm.com/official_26/starfish_rsync"
+#MIRROR_DIR="../../build-starfish"
+#MIRROR_USER="John Johnson"
+#MIRROR_PASS="mulipassport"
+
+### LGSVL (shared cache):
+#MIRROR_PATH="//ushquc001.palm.com/official_26"
+#MIRROR_DIR="../../../build-mirrors/starfish_rsync"
 
 # -----------------------------------------------------------------------------
 # Internal variables
@@ -147,6 +169,11 @@ doFinish()
 
 mountSharedDownloads()
 {(
+    if [ ! "${MIRROR_PATH}" ]; then
+        title "Mounting shared downloads: SKIP (No MIRROR_PATH)"
+        return
+    fi
+
     title "Mounting shared downloads"
 
     local mounted=`mount | grep ${MIRROR_PATH}`
@@ -156,7 +183,9 @@ mountSharedDownloads()
         check
         print "Mounting: ${MIRROR_PATH}"
         print "to ${dir}"
-        echo ${MIRROR_PASS} | sshfs ${MIRROR_PATH} ${dir} -o workaround=rename -o password_stdin
+#        echo ${MIRROR_PASS} | sshfs ${MIRROR_PATH} ${dir} -o workaround=rename -o password_stdin
+#        sudo smbmount --verbose -o username="${MIRROR_USER}" ${MIRROR_PATH} ${dir}
+print "WARNING: mounting is disabled!!!"
         check
     else
         print "Already mounted:"
@@ -626,7 +655,7 @@ runMain()
         ;;
 
         *)
-            #mountSharedDownloads
+            mountSharedDownloads
             connectVpn
             #patchGitconfig
             cloneStarfish
