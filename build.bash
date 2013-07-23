@@ -108,6 +108,10 @@ printUsage()
     --with-vpn | vpn                            - Esteblish VPN connection
     --image | image | all                       - build webOS image (default)
     --webkit | webkit | wk                      - build WebKit
+    --webkit | webkit | wk                      - build WebKit
+    --luna-surface-manager | lsm                - build Luna Surfase Manager (LSM)
+    --webappmanager2 | wam2 | wam               - build Web Application Manager (WAM2)
+    --valgrind | valgrind | vg                  - build Valgrind
     --configure | configure | conf | cfg | cf   - do configure before compilation
     --without-bitbake | nobb | nbb | nb         - skip build (bitbake)
     --copy | copy | cp                          - copy output to server
@@ -449,6 +453,27 @@ runBitbake()
             fi
         ;;
 
+        valgrind)
+            print "Compiling Valgrind:"
+            print "bitbake valgrind"
+            echo && echo
+            bitbake valgrind
+        ;;
+
+        lsm)
+            print "Compiling Luna Surface Manager:"
+            print "bitbake starfish-luna-surface-manager"
+            echo && echo
+            bitbake starfish-luna-surface-manager -C patch
+        ;;
+
+        wam2)
+            print "Compiling WAM2:"
+            print "bitbake webappmanager2"
+            echo && echo
+            bitbake webappmanager2 -C patch
+        ;;
+
         image)
             print "Bitbake starfish-image"
             echo
@@ -606,6 +631,18 @@ parseArguments()
 
             --webkit | webkit | wk)
                 TASK="webkit"
+            ;;
+
+            --luna-surface-manager | lsm)
+                TASK="lsm"
+            ;;
+
+            --webappmanager2 | wam2 | wam)
+                TASK="wam2"
+            ;;
+
+            --valgrind | valgrind | vg)
+                TASK="valgrind"
             ;;
 
             --configure | configure | conf | cfg | cf)
