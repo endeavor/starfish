@@ -188,8 +188,8 @@ mountSharedDownloads()
         print "Mounting: ${MIRROR_PATH}"
         print "to ${dir}"
 #        echo ${MIRROR_PASS} | sshfs ${MIRROR_PATH} ${dir} -o workaround=rename -o password_stdin
-#        sudo smbmount --verbose -o username="${MIRROR_USER}" ${MIRROR_PATH} ${dir}
-print "WARNING: mounting is disabled!!!"
+        sudo smbmount --verbose -o username="${MIRROR_USER}" ${MIRROR_PATH} ${dir}
+#print "WARNING: mounting is disabled!!!"
         check
     else
         print "Already mounted:"
@@ -302,6 +302,37 @@ cloneStarfish()
 ); [ $? -eq 0 ] || terminate; }
 
 # -----------------------------------------------------------------------------
+# Clone build-starfish.git
+# -----------------------------------------------------------------------------
+
+downloadStarfishDownloads()
+{(
+    title "Download starfish-downloads.tar.bz2"
+    local dir=${DIR}/build-starfish/downloads
+    local location="http://172.26.123.22/ftp"
+    local downloads="starfish-downloads.tar.bz2"
+    if [ ! -d ${dir} ]; then
+        cd ${DIR}/build-starfish/
+        print "wget ${location}/${downloads}"
+        echo
+        wget ${location}/${downloads}
+        check
+        print "tar -xjf ${downloads}"
+        echo
+        tar -xjf ${downloads}
+        check
+        print "rm ${downloads}"
+        echo
+        rm ${downloads}
+        check
+        cd -
+    else
+        print "Already have downloads:"
+        print "${dir}"
+    fi
+); [ $? -eq 0 ] || terminate; }
+
+# -----------------------------------------------------------------------------
 # Clone WebKit
 # -----------------------------------------------------------------------------
 
@@ -316,6 +347,51 @@ cloneWebKit()
         check
     else
         print "Already cloned:"
+        print "${dir}"
+    fi
+); [ $? -eq 0 ] || terminate; }
+
+# -----------------------------------------------------------------------------
+# Copy WebKit from downloads and checkout
+# -----------------------------------------------------------------------------
+
+copyWebKit()
+{(
+    title "Copy WebKit"
+    local dir=${DIR}/WebKit
+    if [ ! -d ${dir} ]; then
+        print "Create WebKit dir and copy bare repo from mirror downloads"
+        mkdir $dir
+        check
+        cd $dir
+        check
+        cp -RP ${DIR}/${MIRROR_DIR}/downloads/git2/gpro.palm.com.starfish.WebKit .git
+        check
+        print "Set bare = false and checkout master"
+        echo
+#        sed -i "s/bare.=.true/bare = false/g" .git/config
+        cat > .git/config << EOF
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[remote "origin"]
+	fetch = +refs/heads/*:refs/remotes/origin/*
+	url = ssh://gpro.palm.com/starfish/WebKit
+[branch "master"]
+	remote = origin
+	merge = refs/heads/master
+EOF
+        check
+        git checkout master
+        check
+        print "Update repo: git pull"
+        echo
+        git pull
+        check
+    else
+        print "Already copied:"
         print "${dir}"
     fi
 ); [ $? -eq 0 ] || terminate; }
@@ -696,13 +772,14 @@ runMain()
             connectVpn
             #patchGitconfig
             cloneStarfish
-            cloneWebKit
-            fixWebKitOrigin
+            #cloneWebKit
+            #fixWebKitOrigin
+            copyWebKit
             createLocalConfiguration
             runMfc
             unpackToolchain
             runBitbake
-            copyFilesToServer
+            #copyFilesToServer
             #prepareTargetBoard
         ;;
     esac
