@@ -760,9 +760,8 @@ runMain()
     doStart
     case "${TASK}" in
         pc)
-            #patchGitconfig
-            cloneWebKit
-            fixWebKitOrigin
+            mountSharedDownloads
+            copyWebKit
             buildQt5
             buildWebKit
         ;;

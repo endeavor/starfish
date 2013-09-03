@@ -1,0 +1,24 @@
+diff --git a/Source/WebKit2/UIProcess/qt/QtWebPageUIClient.h b/Source/WebKit2/UIProcess/qt/QtWebPageUIClient.h
+index 7dd217f..444037b 100644
+--- a/Source/WebKit2/UIProcess/qt/QtWebPageUIClient.h
++++ b/Source/WebKit2/UIProcess/qt/QtWebPageUIClient.h
+@@ -27,6 +27,7 @@
+ #if defined(WEBOS_TASKONE) || defined(WEBOS_DESKTOP)
+ #include <QVariant>
+ #endif
++#include <QtCore/QRect>
+ #include <QtCore/QString>
+ #include <QtCore/QUrl>
+ #include <WKFrame.h>
+diff --git a/Source/WebKit2/WebProcess/qt/QtNetworkAccessManager.cpp b/Source/WebKit2/WebProcess/qt/QtNetworkAccessManager.cpp
+index 7592627..741983c 100644
+--- a/Source/WebKit2/WebProcess/qt/QtNetworkAccessManager.cpp
++++ b/Source/WebKit2/WebProcess/qt/QtNetworkAccessManager.cpp
+@@ -37,6 +37,7 @@
+ #include <QNetworkReply>
+ #include <QNetworkRequest>
+ #include <QSslCertificate>
++#include <QSslConfiguration>
+ #include <QSslError>
+ 
+ namespace WebKit {
