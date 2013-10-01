@@ -13,6 +13,7 @@ declare MIRROR_PASS # Password for cache server
 declare SERVER_NAME # Server name or IP
 declare SERVER_USER # Your username at server
 declare SERVER_PASS # Your password at server
+declare NUMBER_OF_THREADS=8 # Put your number of threads e.g. 0
 
 # -----------------------------------------------------------------------------
 # build.conf samples
@@ -474,7 +475,7 @@ runMfc()
     if [ ! -d ${buildir} ]; then
         cd ${DIR}/build-starfish
         print "Running mfc..."
-        ./mcf -p 0 -b 0 --premirror=file://${DIR}/${MIRROR_DIR}/downloads --sstatemirror=file://${DIR}/${MIRROR_DIR}/sstate-cache goldfinger
+        ./mcf -p $NUMBER_OF_THREADS -b $NUMBER_OF_THREADS --premirror=file://${DIR}/${MIRROR_DIR}/downloads --sstatemirror=file://${DIR}/${MIRROR_DIR}/sstate-cache goldfinger
    else
         print "Already configured:"
         print "${buildir}"
