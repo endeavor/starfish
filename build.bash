@@ -357,6 +357,12 @@ cloneWebKit()
 
 copyWebKit()
 {(
+    if [ ! "${MIRROR_PATH}" ]; then
+        title "Cannot copy WebKit (No MIRROR_PATH)"
+        cloneWebKit
+        return
+    fi
+
     title "Copy WebKit"
     local dir=${DIR}/WebKit
     if [ ! -d ${dir} ]; then
