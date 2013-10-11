@@ -46,6 +46,7 @@ declare CONF=""
 declare BAKE="1"
 declare COPY=""
 declare TIME=0
+declare TARGET="goldfinger"
 
 # -----------------------------------------------------------------------------
 # Check current error code
@@ -143,6 +144,7 @@ doStart()
     print "  Mirror: ${MIRROR_PATH}"
     print "  Server: ${SERVER_USER} at ${SERVER_NAME}"
     print "    Task: ${TASK}"
+    print "  Target: ${TARGET}"
     cd ${DIR}
     check
 }
@@ -471,11 +473,11 @@ fixWebKitOrigin()
 runMfc()
 {(
     title "Configuring: mfc"
-    local buildir=${DIR}/build-starfish/BUILD-goldfinger
+    local buildir=${DIR}/build-starfish/BUILD-$TARGET
     if [ ! -d ${buildir} ]; then
         cd ${DIR}/build-starfish
         print "Running mfc..."
-        ./mcf -p $NUMBER_OF_THREADS -b $NUMBER_OF_THREADS --premirror=file://${DIR}/${MIRROR_DIR}/downloads --sstatemirror=file://${DIR}/${MIRROR_DIR}/sstate-cache goldfinger
+        ./mcf -p $NUMBER_OF_THREADS -b $NUMBER_OF_THREADS --premirror=file://${DIR}/${MIRROR_DIR}/downloads --sstatemirror=file://${DIR}/${MIRROR_DIR}/sstate-cache $TARGET
    else
         print "Already configured:"
         print "${buildir}"
@@ -518,7 +520,7 @@ runBitbake()
 
     title "Bitbake"
     print "Source bitbake.rc"
-    cd ${DIR}/build-starfish/BUILD-goldfinger
+    cd ${DIR}/build-starfish/BUILD-$TARGET
     source bitbake.rc
 
     case "${TASK}" in
@@ -588,7 +590,7 @@ copyFilesToServer()
         terminate
     fi
 
-    local buildir=${DIR}/build-starfish/BUILD-goldfinger
+    local buildir=${DIR}/build-starfish/BUILD-$TARGET
 
     case "${TASK}" in
         webkit)
@@ -600,7 +602,7 @@ copyFilesToServer()
 
         image)
             print "Copying starfish-image..."
-            image=${buildir}/deploy/images/starfish-image-goldfinger.tar.gz 
+            image=${buildir}/deploy/images/starfish-image-$TARGET.tar.gz 
             destination=${SERVER_USER}@${SERVER_NAME}:/home/${SERVER_USER}/starfish/
             scp ${image} ${destination}
         ;;
@@ -619,7 +621,7 @@ copyFilesToServer()
 prepareTargetBoard()
 {(
     title "Target board preparation"
-    local buildir=${DIR}/build-starfish/BUILD-goldfinger
+    local buildir=${DIR}/build-starfish/BUILD-$TARGET
 
     cat >> .profile << EOF
 echo
@@ -714,6 +716,14 @@ parseArguments()
 
             --webkit | webkit | wk)
                 TASK="webkit"
+            ;;
+
+            --target=goldfinger | goldfinger)
+                TARGET="goldfinger"
+            ;;
+
+            --target=m14tv | m14tv | m14)
+                TARGET="m14tv"
             ;;
 
             --luna-surface-manager | lsm)
