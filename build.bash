@@ -108,8 +108,11 @@ printUsage()
     Usage: ./build.bash [COMMAND] OPTIONS
 
     --with-vpn | vpn                            - Esteblish VPN connection
+    --target=goldfinger | goldfinger | h13      - H/W target H13 "Goldfinger" (default)
+    --target=m14tv | m14tv | m14                - H/W target M14 "m14tv"
     --image | image | all                       - build webOS image (default)
-    --webkit | webkit | wk                      - build WebKit
+    --flash | flash                             - build flash image "epk"
+    --devel | devel | dev                       - build development tools
     --webkit | webkit | wk                      - build WebKit
     --luna-surface-manager | lsm                - build Luna Surfase Manager (LSM)
     --webappmanager2 | wam2 | wam               - build Web Application Manager (WAM2)
@@ -565,6 +568,18 @@ runBitbake()
             bitbake starfish-image
         ;;
 
+        flash)
+            print "Bitbake starfish-flash"
+            echo
+            bitbake starfish-flash
+        ;;
+
+        devel)
+            print "Bitbake starfish-image-devel"
+            echo
+            bitbake starfish-image-devel
+        ;;
+
         *)
             print "ERROR: unspecified task"
             terminate
@@ -714,11 +729,19 @@ parseArguments()
                 TASK="image"
             ;;
 
+            --flash | flash)
+                TASK="flash"
+            ;;
+
+            --devel | devel | dev)
+                TASK="devel"
+            ;;
+
             --webkit | webkit | wk)
                 TASK="webkit"
             ;;
 
-            --target=goldfinger | goldfinger)
+            --target=goldfinger | goldfinger | h13)
                 TARGET="goldfinger"
             ;;
 
