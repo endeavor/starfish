@@ -47,6 +47,7 @@ declare BAKE="1"
 declare COPY=""
 declare TIME=0
 declare TARGET="goldfinger"
+declare MOBIUS=""
 
 # -----------------------------------------------------------------------------
 # Check current error code
@@ -119,6 +120,8 @@ printUsage()
     --valgrind | valgrind | vg                  - build Valgrind
     --configure | configure | conf | cfg | cf   - do configure before compilation
     --without-bitbake | nobb | nbb | nb         - skip build (bitbake)
+    --mobius | mobius | mb                      - build Mobuis
+    --linux | linux | pc                        - build WebKit for PC/Linux
     --copy | copy | cp                          - copy output to server
     --help | -h                                 - print this help
 EOF
@@ -363,6 +366,11 @@ cloneWebKit()
 
 copyWebKit()
 {(
+    if [ "${MOBIUS}" ]; then
+        title "Copy WebKit: SKIP due to Mobius"
+        return
+    fi
+
     if [ ! "${MIRROR_PATH}" ]; then
         title "Cannot copy WebKit (No MIRROR_PATH)"
         cloneWebKit
@@ -414,6 +422,11 @@ EOF
 
 createLocalConfiguration()
 {(
+    if [ "${MOBIUS}" ]; then
+        title "Create local configuration: SKIP due to Mobius"
+        return
+    fi
+
     title "Create local configuration"
     local file=${DIR}/build-starfish/webos-local.conf
 
@@ -470,6 +483,48 @@ fixWebKitOrigin()
 ); [ $? -eq 0 ] || terminate; }
 
 # -----------------------------------------------------------------------------
+# Clone Mobius
+# -----------------------------------------------------------------------------
+
+cloneMobius()
+{(
+    if [ ! "${MOBIUS}" ]; then
+        title "Clone Mobius: SKIP"
+        return
+    fi
+
+    title "Clone Mobius"
+    local dir=${DIR}/mobius
+    if [ ! -d ${dir} ]; then
+        print "git clone http://lge:123456@repo.lge.net/mobius.git"
+        echo
+        git clone http://lge:123456@repo.lge.net/mobius.git
+        check
+    else
+        print "Already cloned:"
+        print "${dir}"
+    fi
+
+    local revision="362350f1"
+    local buildnum="#327"
+#    local revision="c425e6c8"
+#    local buildnum="#326"
+    echo
+    print "Set build ${buildnum}"
+    cd ${DIR}/build-starfish
+    check
+    local currentrev=`git rev-parse HEAD | grep ^${revision}`
+    if [ ! ${currentrev} ]; then
+        print "Checkout build-starfish ${revision} (build ${buildnum})"
+        git checkout ${revision}
+        check
+    else
+        print "build-starfish is already at ${revision} (build ${buildnum})"
+    fi
+    cd --
+); [ $? -eq 0 ] || terminate; }
+
+# -----------------------------------------------------------------------------
 # Run mfc to configure starfish build
 # -----------------------------------------------------------------------------
 
@@ -488,7 +543,7 @@ runMfc()
 ); [ $? -eq 0 ] || terminate; }
 
 # -----------------------------------------------------------------------------
-# Clone build-starfish.git
+# Unpack Toolchain
 # -----------------------------------------------------------------------------
 
 unpackToolchain()
@@ -507,6 +562,52 @@ unpackToolchain()
     else
         print "Toolchain is unpacked"
         print "${dir}"
+    fi
+); [ $? -eq 0 ] || terminate; }
+
+# -----------------------------------------------------------------------------
+# Apply Mobius patches
+# -----------------------------------------------------------------------------
+
+applyPatch()
+{
+    print "Patching ${1}"
+    patch -p0 < ${1}
+    check
+}
+
+copyPatch()
+{
+    mkdir -p ${2}
+    print "Copying ${1} to"
+    print "${2}"
+    cp ${1} ${2}/
+    check
+}
+
+applyMobiusPatches()
+{(
+    if [ ! "${MOBIUS}" ]; then
+        title "Clone Mobius: SKIP"
+        return
+    fi
+
+    title "Applying Mobius patches"
+    local bb=${DIR}/build-starfish/meta-starfish/recipes-exp/com.palm.app.mobius/com.palm.app.mobius.bb
+    if [ ! -f ${bb} ]; then
+        local patches=${DIR}/mobius/mobius_apps_pack
+        applyPatch ${patches}/bb_patch.patch
+        applyPatch ${patches}/luna-surfacemanager_bb.patch
+        copyPatch  ${patches}/luna-surfacemanager.patch ${DIR}/build-starfish/meta-webos-pro/recipes-webos/luna-surfacemanager/luna-surfacemanager
+        applyPatch ${patches}/qtwayland_inc.patch
+        copyPatch  ${patches}/qtwayland.patch ${DIR}/build-starfish/meta-qt5/recipes-qt/qt5/qtwayland
+        applyPatch ${patches}/webappmanager2_bbappend.patch
+        copyPatch  ${patches}/webappmanager2.patch ${DIR}/build-starfish/meta-starfish/recipes-webos/webappmanager2/webappmanager2
+        applyPatch ${patches}/webappmgr-pluggable_bb.patch
+        copyPatch  ${patches}/webappmgr-pluggable.patch ${DIR}/build-starfish/meta-starfish/recipes-starfish/webappmgr-pluggable/webappmgr-pluggable
+    else
+        print "Already applied:"
+        print ${bb}
     fi
 ); [ $? -eq 0 ] || terminate; }
 
@@ -761,6 +862,10 @@ parseArguments()
                 TASK="valgrind"
             ;;
 
+            --mobius | mobius | mb)
+                MOBIUS="1"
+            ;;
+
             --configure | configure | conf | cfg | cf)
                 CONF="1"
             ;;
@@ -815,8 +920,10 @@ runMain()
             #fixWebKitOrigin
             copyWebKit
             createLocalConfiguration
+            cloneMobius
             runMfc
             unpackToolchain
+            applyMobiusPatches
             runBitbake
             #copyFilesToServer
             #prepareTargetBoard
