@@ -505,10 +505,8 @@ cloneMobius()
         print "${dir}"
     fi
 
-    local revision="362350f1"
-    local buildnum="#327"
-#    local revision="c425e6c8"
-#    local buildnum="#326"
+    local revision="ca703d6e"
+    local buildnum="#373"
     echo
     print "Set build ${buildnum}"
     cd ${DIR}/build-starfish
