@@ -1,3 +1,16 @@
+diff --git a/Source/WebCore/loader/cache/MemoryCache.cpp b/Source/WebCore/loader/cache/MemoryCache.cpp
+index ca59b61..f551198 100644
+--- a/Source/WebCore/loader/cache/MemoryCache.cpp
++++ b/Source/WebCore/loader/cache/MemoryCache.cpp
+@@ -819,7 +819,7 @@ void MemoryCache::evictResourcesIfPossible()
+     while (outerIterator != m_resources.end()) {
+         if (outerIterator->value->canDelete())
+             resources.append(outerIterator->value);
+-        outerIterator++;
++        ++outerIterator;
+     }
+     int index = 0;
+     while (index < resources.size())
 diff --git a/Source/WebCore/platform/graphics/qt/GraphicsContext3DQt.cpp b/Source/WebCore/platform/graphics/qt/GraphicsContext3DQt.cpp
 index 8b5f576..3f8d688 100644
 --- a/Source/WebCore/platform/graphics/qt/GraphicsContext3DQt.cpp
@@ -39,7 +52,7 @@ index 7dd217f..444037b 100644
  #include <QtCore/QUrl>
  #include <WKFrame.h>
 diff --git a/Source/WebKit2/WebProcess/WebPage/WebPage.cpp b/Source/WebKit2/WebProcess/WebPage/WebPage.cpp
-index ca71f01..024698c 100755
+index 53856d0..6fc3d25 100755
 --- a/Source/WebKit2/WebProcess/WebPage/WebPage.cpp
 +++ b/Source/WebKit2/WebProcess/WebPage/WebPage.cpp
 @@ -721,11 +721,11 @@ EditorState WebPage::editorState() const
@@ -70,7 +83,7 @@ index 2891bf5..211d58a 100755
  
      void didChangeSelection();
 diff --git a/Source/WebKit2/WebProcess/qt/QtNetworkAccessManager.cpp b/Source/WebKit2/WebProcess/qt/QtNetworkAccessManager.cpp
-index 4db3b8e..1458e8c 100755
+index 21dff88..314a33a 100755
 --- a/Source/WebKit2/WebProcess/qt/QtNetworkAccessManager.cpp
 +++ b/Source/WebKit2/WebProcess/qt/QtNetworkAccessManager.cpp
 @@ -37,6 +37,7 @@
