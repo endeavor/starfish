@@ -1,3 +1,31 @@
+diff --git a/Source/WebCore/platform/graphics/qt/GraphicsContext3DQt.cpp b/Source/WebCore/platform/graphics/qt/GraphicsContext3DQt.cpp
+index 8b5f576..3f8d688 100644
+--- a/Source/WebCore/platform/graphics/qt/GraphicsContext3DQt.cpp
++++ b/Source/WebCore/platform/graphics/qt/GraphicsContext3DQt.cpp
+@@ -132,7 +132,7 @@ GraphicsContext3DPrivate::GraphicsContext3DPrivate(GraphicsContext3D* context, H
+     // We need to create a surface in order to create a QOpenGLContext and make it current.
+     QWindow* window = new QWindow;
+     window->setSurfaceType(QSurface::OpenGLSurface);
+-    window->setFlags(Qt::Window | Qt::FramelessWindowHint);
++    window->setFlags((Qt::WindowType)(Qt::Window | Qt::FramelessWindowHint));
+     window->setGeometry(-10, -10, 1, 1);
+     window->create();
+     m_surface = window;
+diff --git a/Source/WebKit2/UIProcess/qt/QtPageClient.cpp b/Source/WebKit2/UIProcess/qt/QtPageClient.cpp
+index b37ce89..faa680e 100644
+--- a/Source/WebKit2/UIProcess/qt/QtPageClient.cpp
++++ b/Source/WebKit2/UIProcess/qt/QtPageClient.cpp
+@@ -156,8 +156,9 @@ void QtPageClient::handleProxyAuthenticationRequiredRequest(const String& hostna
+ 
+ void QtPageClient::setCursor(const WebCore::Cursor& cursor)
+ {
++#if defined(WEBOS_TASKONE) || defined(WEBOS_DESKTOP)
+     QQuickWebViewPrivate::get(m_webView)->handleSetCursorRequest(cursor);
+-#if !defined(WEBOS_TASKONE) && !defined(WEBOS_DESKTOP)
++#else
+     // FIXME: This is a temporary fix until we get cursor support in QML items.
+     QGuiApplication::setOverrideCursor(*cursor.platformCursor());
+ #endif
 diff --git a/Source/WebKit2/UIProcess/qt/QtWebPageUIClient.h b/Source/WebKit2/UIProcess/qt/QtWebPageUIClient.h
 index 7dd217f..444037b 100644
 --- a/Source/WebKit2/UIProcess/qt/QtWebPageUIClient.h
@@ -10,8 +38,39 @@ index 7dd217f..444037b 100644
  #include <QtCore/QString>
  #include <QtCore/QUrl>
  #include <WKFrame.h>
+diff --git a/Source/WebKit2/WebProcess/WebPage/WebPage.cpp b/Source/WebKit2/WebProcess/WebPage/WebPage.cpp
+index ca71f01..024698c 100755
+--- a/Source/WebKit2/WebProcess/WebPage/WebPage.cpp
++++ b/Source/WebKit2/WebProcess/WebPage/WebPage.cpp
+@@ -721,11 +721,11 @@ EditorState WebPage::editorState() const
+     return result;
+ }
+ 
+-void WebPage::updateInputDirection(WritingDirection direction)
++void WebPage::updateInputDirection(int direction)
+ {
+     Frame* frame = m_page->focusController()->focusedOrMainFrame();
+     ASSERT(frame);
+-    frame->editor()->setBaseWritingDirection(direction);
++    frame->editor()->setBaseWritingDirection((WritingDirection)direction);
+ }
+ 
+ String WebPage::renderTreeExternalRepresentation() const
+diff --git a/Source/WebKit2/WebProcess/WebPage/WebPage.h b/Source/WebKit2/WebProcess/WebPage/WebPage.h
+index 2891bf5..211d58a 100755
+--- a/Source/WebKit2/WebProcess/WebPage/WebPage.h
++++ b/Source/WebKit2/WebProcess/WebPage/WebPage.h
+@@ -486,7 +486,7 @@ public:
+     void setComposition(const String& text, Vector<WebCore::CompositionUnderline> underlines, uint64_t selectionStart, uint64_t selectionEnd, uint64_t replacementRangeStart, uint64_t replacementRangeEnd);
+     void confirmComposition(const String& text, int64_t selectionStart, int64_t selectionLength);
+     void cancelComposition();
+-    void updateInputDirection(WritingDirection direction);
++    void updateInputDirection(int direction);
+ #endif
+ 
+     void didChangeSelection();
 diff --git a/Source/WebKit2/WebProcess/qt/QtNetworkAccessManager.cpp b/Source/WebKit2/WebProcess/qt/QtNetworkAccessManager.cpp
-index 7592627..741983c 100644
+index 4db3b8e..1458e8c 100755
 --- a/Source/WebKit2/WebProcess/qt/QtNetworkAccessManager.cpp
 +++ b/Source/WebKit2/WebProcess/qt/QtNetworkAccessManager.cpp
 @@ -37,6 +37,7 @@
@@ -21,4 +80,42 @@ index 7592627..741983c 100644
 +#include <QSslConfiguration>
  #include <QSslError>
  
- namespace WebKit {
+ #if USE(DILECRYPTO)
+@@ -152,6 +153,7 @@ void QtNetworkAccessManager::onAuthenticationRequired(QNetworkReply* reply, QAut
+ void QtNetworkAccessManager::onSslErrors(QNetworkReply* reply, const QList<QSslError>& qSslErrors)
+ {
+ #ifndef QT_NO_SSL
++#if defined(WEBOS_TASKONE) || defined(WEBOS_DESKTOP)
+     String certificateString("");
+     WebPage* webPage = obtainOriginatingWebPage(reply->request());
+ 
+@@ -172,6 +174,7 @@ void QtNetworkAccessManager::onSslErrors(QNetworkReply* reply, const QList<QSslE
+             reply->abort();
+     }
+ #endif
++#endif
+ }
+ #ifndef QT_NO_SSL
+ #if defined(WEBOS_TASKONE) || defined(WEBOS_DESKTOP)
+diff --git a/Tools/qmake/mkspecs/features/features.pri b/Tools/qmake/mkspecs/features/features.pri
+index 3468335..9138db6 100644
+--- a/Tools/qmake/mkspecs/features/features.pri
++++ b/Tools/qmake/mkspecs/features/features.pri
+@@ -46,7 +46,7 @@ FEATURE_DEFAULTS = \
+     ENABLE_DEVICE_ORIENTATION=0 \
+     ENABLE_DIRECTORY_UPLOAD=0 \
+     ENABLE_DOWNLOAD_ATTRIBUTE=0 \
+-    ENABLE_ENCRYPTED_MEDIA=1 \
++    ENABLE_ENCRYPTED_MEDIA=0 \
+     ENABLE_FAST_MOBILE_SCROLLING=1 \
+     ENABLE_FILE_SYSTEM=0 \
+     ENABLE_FILTERS=1 \
+@@ -120,7 +120,7 @@ FEATURE_DEFAULTS = \
+     ENABLE_TOUCH_EVENTS=0 \
+     ENABLE_TOUCH_ICON_LOADING=0 \
+     ENABLE_USER_TIMING=0 \
+-    ENABLE_VENDOR_EXTENDED_EVENT=1 \
++    ENABLE_VENDOR_EXTENDED_EVENT=0 \
+     ENABLE_VIBRATION=0 \
+     ENABLE_VIDEO=0 \
+     ENABLE_VIDEO_TRACK=1 \

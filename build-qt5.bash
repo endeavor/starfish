@@ -80,7 +80,7 @@ done
 
 
 cd qtsdk
-git checkout stable
+git checkout master
 git clean -dxf
 git reset --hard HEAD
 git submodule foreach "git checkout stable"
@@ -88,7 +88,13 @@ git submodule foreach "git clean -dxf"
 git submodule foreach "git reset --hard HEAD"
 git fetch || exit 1
 git reset --hard $WEEKLY_QT5_HASH || exit 1
+echo ==========================================================
+echo Patching .gitmodules
+sed -i "/git:\/\/qt.gitorious.org\/qt\/qtbase.git/s%qt.gitorious%gitorious%" .gitmodules
+sed -i "/git:\/\/qt.gitorious.org\/qt\/qtdeclarative.git/s%qt.gitorious%gitorious%" .gitmodules
+echo ==========================================================
 ./init-repository $MIRROR/ --module-subset=qtbase,`echo $QT5_MODULES | tr " " ","` -f || exit 1
+echo ==========================================================
 git submodule foreach "git fetch" || exit 1
 git submodule update --recursive || exit 1
 echo ==========================================================
