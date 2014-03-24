@@ -1,3 +1,23 @@
+diff --git a/Source/WebKit2/Shared/CoordinatedGraphics/WebCoordinatedSurface.cpp b/Source/WebKit2/Shared/CoordinatedGraphics/WebCoordinatedSurface.cpp
+index 3d6bb76..905a177 100644
+--- a/Source/WebKit2/Shared/CoordinatedGraphics/WebCoordinatedSurface.cpp
++++ b/Source/WebKit2/Shared/CoordinatedGraphics/WebCoordinatedSurface.cpp
+@@ -185,12 +185,11 @@ bool WebCoordinatedSurface::createHandle(Handle& handle)
+ 
+ #if USE(GRAPHICS_SURFACE)
+     handle.m_graphicsSurfaceToken = m_graphicsSurface ? m_graphicsSurface->exportToken() : GraphicsSurfaceToken();
+-    if (!handle.m_graphicsSurfaceToken.isValid())
+-        return false;
+-#else
++    if (handle.m_graphicsSurfaceToken.isValid())
++        return true;
++#endif
+     if (!m_bitmap->createHandle(handle.m_bitmapHandle))
+         return false;
+-#endif
+ 
+     return true;
+ }
 diff --git a/Source/WebCore/loader/cache/MemoryCache.cpp b/Source/WebCore/loader/cache/MemoryCache.cpp
 index ca59b61..f551198 100644
 --- a/Source/WebCore/loader/cache/MemoryCache.cpp

@@ -787,15 +787,15 @@ buildWebKit()
 {(
     title "Building WebKit for PC/Linux"
 
-    #if [ ! -d "WebKit/WebKitBuild/desktop" ]; then
+    if [ ! -d "WebKit/WebKitBuild/desktop" ]; then
         print "./build-webkit.bash > build-webkit.log"
         echo
         ./build-webkit.bash > build-webkit.log
         check
-    #else
-    #    print "WebKit is already built:"
-    #    print "WebKit/WebKitBuild/desktop"
-    #fi
+    else
+        print "WebKit is already built:"
+        print "WebKit/WebKitBuild/desktop"
+    fi
 ); [ $? -eq 0 ] || terminate; }
 
 # -----------------------------------------------------------------------------
