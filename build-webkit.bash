@@ -42,6 +42,7 @@ $WEBKIT_ROOT/Tools/Scripts/build-webkit \
    --qmakearg="QMAKE_CXXFLAGS+=-Wno-deprecated-declarations" \
    --qmakearg="QMAKE_CXXFLAGS+=-Wno-return-type" \
    --qmakearg="QMAKE_CXXFLAGS+=-Wno-missing-field-initializers" \
+   --qmakearg="QMAKE_CXXFLAGS+=-Wno-reorder" \
    --qmakearg="QMAKE_LFLAGS+=-L$WEBKIT_ROOT/$WEBKITOUTPUTDIR/Release/lib" \
    --qmakearg="QMAKE_RPATHDIR+=$QTDIR/lib" \
    --qmakearg="QMAKE_RPATHDIR+=$QTDIR/usr/lib" \

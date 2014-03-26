@@ -1,8 +1,111 @@
+diff --git a/Source/WebCore/loader/cache/MemoryCache.cpp b/Source/WebCore/loader/cache/MemoryCache.cpp
+index ca59b61..f551198 100644
+--- a/Source/WebCore/loader/cache/MemoryCache.cpp
++++ b/Source/WebCore/loader/cache/MemoryCache.cpp
+@@ -819,7 +819,7 @@ void MemoryCache::evictResourcesIfPossible()
+     while (outerIterator != m_resources.end()) {
+         if (outerIterator->value->canDelete())
+             resources.append(outerIterator->value);
+-        outerIterator++;
++        ++outerIterator;
+     }
+     int index = 0;
+     while (index < resources.size())
+diff --git a/Source/WebCore/platform/graphics/qt/GraphicsContext3DQt.cpp b/Source/WebCore/platform/graphics/qt/GraphicsContext3DQt.cpp
+index f739853..bc85b1c 100644
+--- a/Source/WebCore/platform/graphics/qt/GraphicsContext3DQt.cpp
++++ b/Source/WebCore/platform/graphics/qt/GraphicsContext3DQt.cpp
+@@ -132,7 +132,7 @@ GraphicsContext3DPrivate::GraphicsContext3DPrivate(GraphicsContext3D* context, H
+     // We need to create a surface in order to create a QOpenGLContext and make it current.
+     QWindow* window = new QWindow;
+     window->setSurfaceType(QSurface::OpenGLSurface);
+-    window->setFlags(Qt::Window | Qt::FramelessWindowHint);
++    window->setFlags((Qt::WindowType)(Qt::Window | Qt::FramelessWindowHint));
+     window->setGeometry(-10, -10, 1, 1);
+     window->create();
+     m_surface = window;
+@@ -234,7 +234,9 @@ void GraphicsContext3DPrivate::initializeANGLE()
+ GraphicsContext3DPrivate::~GraphicsContext3DPrivate()
+ {
+ #if USE(GRAPHICS_SURFACE)
++#if USE(STARFISH_SURFACE)
+     purgeGraphicsSurface();
++#endif
+ 
+     if (m_surfaceOwner)
+         delete m_platformContext;
+diff --git a/Source/WebCore/platform/graphics/texmap/coordinated/CoordinatedGraphicsScene.cpp b/Source/WebCore/platform/graphics/texmap/coordinated/CoordinatedGraphicsScene.cpp
+index 0694a18..94380bd 100644
+--- a/Source/WebCore/platform/graphics/texmap/coordinated/CoordinatedGraphicsScene.cpp
++++ b/Source/WebCore/platform/graphics/texmap/coordinated/CoordinatedGraphicsScene.cpp
+@@ -560,8 +560,12 @@ void CoordinatedGraphicsScene::removeTilesIfNeeded(TextureMapperLayer* layer, co
+ 
+ void CoordinatedGraphicsScene::updateTilesIfNeeded(TextureMapperLayer* layer, const CoordinatedGraphicsLayerState& state)
+ {
+-    if (state.tilesToUpdate.isEmpty() || m_client->isPaintingSuspended())
++    if (state.tilesToUpdate.isEmpty())
+         return;
++#if defined(WEBOS_TASKONE) || defined(WEBOS_DESKTOP)
++    if (m_client->isPaintingSuspended())
++        return;
++#endif
+ 
+     RefPtr<CoordinatedBackingStore> backingStore = m_backingStores.get(layer);
+     ASSERT(backingStore);
+diff --git a/Source/WebCore/platform/qt/RenderThemeQtMobile.cpp b/Source/WebCore/platform/qt/RenderThemeQtMobile.cpp
+index cac92ee..c54f1b0 100644
+--- a/Source/WebCore/platform/qt/RenderThemeQtMobile.cpp
++++ b/Source/WebCore/platform/qt/RenderThemeQtMobile.cpp
+@@ -464,7 +464,7 @@ void StylePainterMobile::drawLineEdit(const QRect& rect, bool focused, bool enab
+     painter->drawPixmap(rect, lineEdit);
+ }
+ 
+-QPixmap StylePainterMobile::findLineEdit(const QSize & size, bool focused) const
++QPixmap StylePainterMobile::findLineEdit(const QSize & size, bool focused)
+ {
+     QPixmap result;
+     KeyIdentifier id;
+@@ -517,7 +517,7 @@ void StylePainterMobile::drawPushButton(const QRect& rect, bool sunken, bool ena
+     painter->drawPixmap(rect, pushButton);
+ }
+ 
+-QPixmap StylePainterMobile::findPushButton(const QSize& size, bool sunken, bool enabled) const
++QPixmap StylePainterMobile::findPushButton(const QSize& size, bool sunken, bool enabled)
+ {
+     QPixmap result;
+     KeyIdentifier id;
+diff --git a/Source/WebCore/platform/qt/RenderThemeQtMobile.h b/Source/WebCore/platform/qt/RenderThemeQtMobile.h
+index abc68ec..62ce4a8 100644
+--- a/Source/WebCore/platform/qt/RenderThemeQtMobile.h
++++ b/Source/WebCore/platform/qt/RenderThemeQtMobile.h
+@@ -167,8 +167,8 @@ private:
+     QPixmap findComboButton(const QSize&, bool multiple, bool enabled) const;
+ #endif
+ 
+-    QPixmap findLineEdit(const QSize&, bool focused) const;
+-    QPixmap findPushButton(const QSize&, bool sunken, bool enabled) const;
++    QPixmap findLineEdit(const QSize&, bool focused);
++    QPixmap findPushButton(const QSize&, bool sunken, bool enabled);
+ 
+     QSize sizeForPainterScale(const QRect&) const;
+ 
+diff --git a/Source/WebCore/rendering/RenderTextControl.cpp b/Source/WebCore/rendering/RenderTextControl.cpp
+index 8af0543..07d9dab 100644
+--- a/Source/WebCore/rendering/RenderTextControl.cpp
++++ b/Source/WebCore/rendering/RenderTextControl.cpp
+@@ -27,6 +27,7 @@
+ #include "RenderText.h"
+ #include "RenderTheme.h"
+ #include "ScrollbarTheme.h"
++#include "Settings.h"
+ #include "StyleInheritedData.h"
+ #include "TextIterator.h"
+ #include "VisiblePosition.h"
 diff --git a/Source/WebKit2/Shared/CoordinatedGraphics/WebCoordinatedSurface.cpp b/Source/WebKit2/Shared/CoordinatedGraphics/WebCoordinatedSurface.cpp
-index 3d6bb76..905a177 100644
+index 5cb4719..0cd6d1f 100644
 --- a/Source/WebKit2/Shared/CoordinatedGraphics/WebCoordinatedSurface.cpp
 +++ b/Source/WebKit2/Shared/CoordinatedGraphics/WebCoordinatedSurface.cpp
-@@ -185,12 +185,11 @@ bool WebCoordinatedSurface::createHandle(Handle& handle)
+@@ -189,12 +189,11 @@ bool WebCoordinatedSurface::createHandle(Handle& handle)
  
  #if USE(GRAPHICS_SURFACE)
      handle.m_graphicsSurfaceToken = m_graphicsSurface ? m_graphicsSurface->exportToken() : GraphicsSurfaceToken();
@@ -18,32 +121,60 @@ index 3d6bb76..905a177 100644
  
      return true;
  }
-diff --git a/Source/WebCore/loader/cache/MemoryCache.cpp b/Source/WebCore/loader/cache/MemoryCache.cpp
-index ca59b61..f551198 100644
---- a/Source/WebCore/loader/cache/MemoryCache.cpp
-+++ b/Source/WebCore/loader/cache/MemoryCache.cpp
-@@ -819,7 +819,7 @@ void MemoryCache::evictResourcesIfPossible()
-     while (outerIterator != m_resources.end()) {
-         if (outerIterator->value->canDelete())
-             resources.append(outerIterator->value);
--        outerIterator++;
-+        ++outerIterator;
-     }
-     int index = 0;
-     while (index < resources.size())
-diff --git a/Source/WebCore/platform/graphics/qt/GraphicsContext3DQt.cpp b/Source/WebCore/platform/graphics/qt/GraphicsContext3DQt.cpp
-index 8b5f576..3f8d688 100644
---- a/Source/WebCore/platform/graphics/qt/GraphicsContext3DQt.cpp
-+++ b/Source/WebCore/platform/graphics/qt/GraphicsContext3DQt.cpp
-@@ -132,7 +132,7 @@ GraphicsContext3DPrivate::GraphicsContext3DPrivate(GraphicsContext3D* context, H
-     // We need to create a surface in order to create a QOpenGLContext and make it current.
-     QWindow* window = new QWindow;
-     window->setSurfaceType(QSurface::OpenGLSurface);
--    window->setFlags(Qt::Window | Qt::FramelessWindowHint);
-+    window->setFlags((Qt::WindowType)(Qt::Window | Qt::FramelessWindowHint));
-     window->setGeometry(-10, -10, 1, 1);
-     window->create();
-     m_surface = window;
+diff --git a/Source/WebKit2/UIProcess/WebPageProxy.cpp b/Source/WebKit2/UIProcess/WebPageProxy.cpp
+index 001af6d..3bc5b5f 100755
+--- a/Source/WebKit2/UIProcess/WebPageProxy.cpp
++++ b/Source/WebKit2/UIProcess/WebPageProxy.cpp
+@@ -404,7 +404,7 @@ PlatformProcessIdentifier WebPageProxy::processIdentifier() const
+     return m_process->processIdentifier();
+ }
+ 
+-bool WebPageProxy::isValid()
++bool WebPageProxy::isValid() const
+ {
+     // A page that has been explicitly closed is never valid.
+     if (m_isClosed)
+@@ -895,7 +895,7 @@ String WebPageProxy::getPreviousBackUrl() const
+     return backItem->url();
+ }
+ 
+-bool WebPageProxy::deleteBackwardHistoryItemWithUrl(const String& url) const
++bool WebPageProxy::deleteBackwardHistoryItemWithUrl(const String& url)
+ {
+     if (!isValid() || url.length() <= 0)
+         return false;
+@@ -3185,7 +3185,9 @@ void WebPageProxy::pageTransitionViewportReady()
+ void WebPageProxy::didRenderFrame(const WebCore::IntSize& contentsSize, const WebCore::IntRect& coveredRect)
+ {
+     STARFISH_TRACE_FUNCTION;
++#if defined(WEBOS_TASKONE) || defined(WEBOS_DESKTOP)
+     m_waitingForDidRenderFrameAfterResumePainting = false;
++#endif
+     m_pageClient->didRenderFrame(contentsSize, coveredRect);
+ }
+ 
+diff --git a/Source/WebKit2/UIProcess/WebPageProxy.h b/Source/WebKit2/UIProcess/WebPageProxy.h
+index 635e2cb..f05cb6f 100755
+--- a/Source/WebKit2/UIProcess/WebPageProxy.h
++++ b/Source/WebKit2/UIProcess/WebPageProxy.h
+@@ -307,7 +307,7 @@ public:
+     void goBack();
+     bool canGoBack() const;
+     String getPreviousBackUrl() const;
+-    bool deleteBackwardHistoryItemWithUrl(const String& specifiUrl) const;
++    bool deleteBackwardHistoryItemWithUrl(const String& specifiUrl);
+ 
+ 
+     void goToBackForwardItem(WebBackForwardListItem*);
+@@ -669,7 +669,7 @@ public:
+ 
+     WebPageGroup* pageGroup() const { return m_pageGroup.get(); }
+ 
+-    bool isValid();
++    bool isValid() const;
+ 
+     PassRefPtr<ImmutableArray> relatedPages() const;
+ 
 diff --git a/Source/WebKit2/UIProcess/qt/QtPageClient.cpp b/Source/WebKit2/UIProcess/qt/QtPageClient.cpp
 index b37ce89..faa680e 100644
 --- a/Source/WebKit2/UIProcess/qt/QtPageClient.cpp
@@ -59,6 +190,21 @@ index b37ce89..faa680e 100644
      // FIXME: This is a temporary fix until we get cursor support in QML items.
      QGuiApplication::setOverrideCursor(*cursor.platformCursor());
  #endif
+diff --git a/Source/WebKit2/UIProcess/qt/QtWebPageEventHandler.cpp b/Source/WebKit2/UIProcess/qt/QtWebPageEventHandler.cpp
+index eed4173..b3008f3 100644
+--- a/Source/WebKit2/UIProcess/qt/QtWebPageEventHandler.cpp
++++ b/Source/WebKit2/UIProcess/qt/QtWebPageEventHandler.cpp
+@@ -583,8 +583,10 @@ void QtWebPageEventHandler::updateTextInputStateInetTVSpecification()
+     if (!m_webView->hasActiveFocus())
+         return;
+ 
++#if defined(WEBOS_TASKONE) || defined(WEBOS_DESKTOP)
+     if (!m_webView->experimental()->useVirtualKeyboard())
+         return;
++#endif
+ 
+     if (editor.isContentEditable) {
+         m_isFocused             = true;
 diff --git a/Source/WebKit2/UIProcess/qt/QtWebPageUIClient.h b/Source/WebKit2/UIProcess/qt/QtWebPageUIClient.h
 index 7dd217f..444037b 100644
 --- a/Source/WebKit2/UIProcess/qt/QtWebPageUIClient.h
@@ -72,10 +218,10 @@ index 7dd217f..444037b 100644
  #include <QtCore/QUrl>
  #include <WKFrame.h>
 diff --git a/Source/WebKit2/WebProcess/WebPage/WebPage.cpp b/Source/WebKit2/WebProcess/WebPage/WebPage.cpp
-index 53856d0..6fc3d25 100755
+index 4e385b1..7e0e7dd 100755
 --- a/Source/WebKit2/WebProcess/WebPage/WebPage.cpp
 +++ b/Source/WebKit2/WebProcess/WebPage/WebPage.cpp
-@@ -721,11 +721,11 @@ EditorState WebPage::editorState() const
+@@ -725,11 +725,11 @@ EditorState WebPage::editorState() const
      return result;
  }
  
@@ -90,7 +236,7 @@ index 53856d0..6fc3d25 100755
  
  String WebPage::renderTreeExternalRepresentation() const
 diff --git a/Source/WebKit2/WebProcess/WebPage/WebPage.h b/Source/WebKit2/WebProcess/WebPage/WebPage.h
-index 2891bf5..211d58a 100755
+index c2e567d..23fbe82 100755
 --- a/Source/WebKit2/WebProcess/WebPage/WebPage.h
 +++ b/Source/WebKit2/WebProcess/WebPage/WebPage.h
 @@ -486,7 +486,7 @@ public:
@@ -103,7 +249,7 @@ index 2891bf5..211d58a 100755
  
      void didChangeSelection();
 diff --git a/Source/WebKit2/WebProcess/qt/QtNetworkAccessManager.cpp b/Source/WebKit2/WebProcess/qt/QtNetworkAccessManager.cpp
-index 21dff88..314a33a 100755
+index 5465992..06f2f72 100755
 --- a/Source/WebKit2/WebProcess/qt/QtNetworkAccessManager.cpp
 +++ b/Source/WebKit2/WebProcess/qt/QtNetworkAccessManager.cpp
 @@ -37,6 +37,7 @@
@@ -122,8 +268,8 @@ index 21dff88..314a33a 100755
      String certificateString("");
      WebPage* webPage = obtainOriginatingWebPage(reply->request());
  
-@@ -172,6 +174,7 @@ void QtNetworkAccessManager::onSslErrors(QNetworkReply* reply, const QList<QSslE
-             reply->abort();
+@@ -170,6 +172,7 @@ void QtNetworkAccessManager::onSslErrors(QNetworkReply* reply, const QList<QSslE
+             reply->ignoreSslErrors(qSslErrors);
      }
  #endif
 +#endif
@@ -131,7 +277,7 @@ index 21dff88..314a33a 100755
  #ifndef QT_NO_SSL
  #if defined(WEBOS_TASKONE) || defined(WEBOS_DESKTOP)
 diff --git a/Tools/qmake/mkspecs/features/features.pri b/Tools/qmake/mkspecs/features/features.pri
-index 3468335..9138db6 100644
+index d849724..7b66ec2 100644
 --- a/Tools/qmake/mkspecs/features/features.pri
 +++ b/Tools/qmake/mkspecs/features/features.pri
 @@ -46,7 +46,7 @@ FEATURE_DEFAULTS = \
@@ -143,7 +289,7 @@ index 3468335..9138db6 100644
      ENABLE_FAST_MOBILE_SCROLLING=1 \
      ENABLE_FILE_SYSTEM=0 \
      ENABLE_FILTERS=1 \
-@@ -120,7 +120,7 @@ FEATURE_DEFAULTS = \
+@@ -121,7 +121,7 @@ FEATURE_DEFAULTS = \
      ENABLE_TOUCH_EVENTS=0 \
      ENABLE_TOUCH_ICON_LOADING=0 \
      ENABLE_USER_TIMING=0 \
